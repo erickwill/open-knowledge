@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   BUNDLE_IDS,
+  buildPackSkills,
   buildSkillBundles,
   checkSharedContentByteEquality,
   composeSkill,
@@ -18,8 +19,7 @@ afterEach(() => {
     if (p) {
       try {
         rmSync(p, { recursive: true, force: true });
-      } catch {
-      }
+      } catch {}
     }
   }
 });
@@ -104,6 +104,38 @@ describe('buildSkillBundles', () => {
       project: '# p\n',
     });
     expect(() => buildSkillBundles(paths)).toThrow(/missing\.md/);
+  });
+});
+
+describe('buildPackSkills', () => {
+  test('composes each packs/<id>/SKILL.md into dist/packs/<id>/', () => {
+    const paths = fixture({ discovery: '# d\n', project: '# p\n' });
+    const packDir = join(paths.skillsDir, 'packs', 'demo-pack');
+    mkdirSync(packDir, { recursive: true });
+    writeFileSync(join(packDir, 'SKILL.md'), '# demo pack\n');
+    expect(buildPackSkills(paths)).toEqual(['demo-pack']);
+    const out = join(paths.distDir, 'packs', 'demo-pack', 'SKILL.md');
+    expect(existsSync(out)).toBe(true);
+    expect(readFileSync(out, 'utf-8')).toBe('# demo pack\n');
+  });
+
+  test('returns [] when there is no packs/ directory', () => {
+    expect(buildPackSkills(fixture({ discovery: '# d\n', project: '# p\n' }))).toEqual([]);
+  });
+
+  test('repo assets — all six starter packs are present to build', () => {
+    const packsDir = join(defaultPaths().skillsDir, 'packs');
+    const expected = [
+      'gbrain',
+      'knowledge-base',
+      'plain-notes',
+      'software-lifecycle',
+      'worldbuilding',
+      'writing-pipeline',
+    ];
+    for (const id of expected) {
+      expect(existsSync(join(packsDir, id, 'SKILL.md'))).toBe(true);
+    }
   });
 });
 

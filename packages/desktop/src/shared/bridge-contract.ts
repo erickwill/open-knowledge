@@ -1,4 +1,3 @@
-
 import type {
   BranchInfoResponse,
   BridgeWorktreeEntry,
@@ -392,11 +391,7 @@ export interface OkDesktopBridge {
   onWhatsNew(cb: (info: OkWhatsNewInfo) => void): OkUnsubscribe;
   onUpdateStuckHint(cb: (info: OkUpdateStuckHintInfo) => void): OkUnsubscribe;
   onDeepLink(
-    cb: (evt: {
-      doc: string;
-      branch?: string | null;
-      multiCandidate?: boolean;
-    }) => void,
+    cb: (evt: { doc: string; branch?: string | null; multiCandidate?: boolean }) => void,
   ): OkUnsubscribe;
   onShareReceived(cb: (payload: OkShareReceivedPayload) => void): OkUnsubscribe;
 

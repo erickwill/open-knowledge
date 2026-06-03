@@ -3,10 +3,6 @@
   "version": "0.9.0",
   "private": false,
   "type": "module",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/inkeep/open-knowledge-legacy.git"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
@@ -31,7 +27,7 @@
   "scripts": {
     "build:cli": "tsdown",
     "build:app": "cp -r ../app/dist dist/public",
-    "build:skill-asset": "bun ../server/scripts/build-skill-bundles.ts && mkdir -p dist/assets/skills && cp -R ../server/dist/assets/skills/discovery ../server/dist/assets/skills/project dist/assets/skills/",
+    "build:skill-asset": "bun ../server/scripts/build-skill-bundles.ts && mkdir -p dist/assets/skills && cp -R ../server/dist/assets/skills/discovery ../server/dist/assets/skills/project dist/assets/skills/ && if [ -d ../server/dist/assets/skills/packs ]; then cp -R ../server/dist/assets/skills/packs dist/assets/skills/; fi",
     "build:notices": "mkdir -p dist && cp ../../THIRD_PARTY_NOTICES.md dist/THIRD_PARTY_NOTICES.md",
     "build:schema": "bun --conditions=development scripts/build-config-schema.mjs",
     "build:assets": "bun run build:app && bun run build:skill-asset && bun run build:notices && bun run build:schema",

@@ -212,9 +212,10 @@ export function FolderDefaultsCard({ folderPath, state, onChange }: Props) {
           <div className="px-2 py-2">
             <p className="px-1 pb-2 text-sm text-muted-foreground">
               <Trans>
-                Properties that describe this folder itself — any properties you like, just like a
-                doc's. They don't flow into the docs inside it; to give new docs starting
-                properties, add a template.
+                What this folder is about — give it a title, description, tags, or any properties
+                you like, just like a doc has. This describes the folder itself; it is not copied
+                into the docs inside it. To start new docs in this folder with a ready-made set of
+                properties, add a template instead.
               </Trans>
             </p>
             {orderedKeys.length === 0 && !adding ? (

@@ -11,25 +11,32 @@ Open Knowledge reads YAML config from three places:
 
 All files are optional; defaults cover everything.
 
-You can edit config two ways:
+You can inspect and edit config three ways:
 
 - **Settings pane** in the editor: Cmd/Ctrl-, or App menu → Settings…
-- **Your IDE**: `.ok/config.yml` ships with a `$schema` magic comment for autocomplete and validation
+- **Your IDE**: `.ok/config.yml` ships with a `$schema` magic comment for autocomplete and inline field descriptions
+- **CLI**: `ok config validate` checks the merged result and reports wrong-scope keys
 
 Edits made anywhere reflect everywhere; an open Settings pane refreshes live.
 
 ## Schema
 
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `content.dir` | string | `"."` | Content directory, relative to project root. Defaults to `.` (the project root) even when `.ok/` is scaffolded at the git working-tree root from a sub-folder, so opened folder and content scope align by default. To narrow scope to a sub-folder, uncomment `content.dir` in `.ok/config.yml` post-init. Excluded paths live in `.okignore`; see [Ignore patterns](/docs/features/ignore-patterns). |
-| `appearance.theme` | `"light" \| "dark" \| "system"` | (unset) | Editor theme. |
-| `appearance.sidebar.showHiddenFiles` | boolean | `false` | Show files whose path segments start with `.`. Server-side `.gitignore` / `.okignore` filters still apply. Lives in project-local config. Toggled from the sidebar's right-click menu or the macOS **View → Show Hidden Files** item. |
-| `appearance.sidebar.showAllFiles` | boolean | `false` | Bypass every ignore filter, including both the client dot-segment drop and the server's `.gitignore` / `.okignore` / built-in exclusions. Surfaces every file on disk under the content directory (synthetic system docs stay hidden). Lives in project-local config. Toggled from the sidebar's right-click menu or the macOS **View → Show All Files** item. |
-| `autoSync.enabled` | `boolean \| null` | `null` | Per-machine git auto-sync toggle. Lives in project-local config. `null` means "unanswered"; the editor's onboarding modal triggers on first remote-detected open. |
-| `editor.wordWrap` | boolean | `true` | Soft-wrap long lines in the source-mode CodeMirror editor. User-scope: a personal preference, not project-shared. Toggle from the Settings pane. |
-| `appearance.preview.autoOpen` | boolean | `true` | Whether the agent should open or refresh the Open Knowledge preview when it edits a doc through the MCP. Default `true` lets the agent route the preview by host capability: the host's in-app browser (Cursor preview pane, Codex's built-in browser, Claude Code Desktop) when one exists, the system browser otherwise. Set `false` to keep the agent's hands off your preview window. This is useful when you're already viewing the doc in OK Desktop, a browser tab on a second display, a non-default browser, or any flow where your extensions / accessibility tooling only work in your own browser. The agent then surfaces the URL on request but does not navigate. User-scope; the change takes effect on the next preview-related tool call. Toggle from **Settings → Preferences → "Open preview when agent edits"**. |
-| `preview.scriptSrc` | `"cdn-allowlist" \| "inline-only"` | `"cdn-allowlist"` | Content Security Policy `script-src` for the code-block HTML preview iframe. `cdn-allowlist` lets preview embeds load library `<script src>` tags from a fixed set of trusted static CDNs (cdnjs, jsDelivr, unpkg, esm.sh), so interactive embeds like chart.js render. The allowlist is fixed: only `cdnjs.cloudflare.com`, `cdn.jsdelivr.net`, `unpkg.com`, and `esm.sh` are permitted and custom origins can't be added. If a script from another origin is blocked (a `script-src` CSP error in the browser console), inline the library directly in the code block or load a copy one of these CDNs hosts. `inline-only` is the strict policy a cloud / multi-tenant deployment opts into: inline scripts only, no external script origins. Project-scoped (committed `config.yml`) so collaborators share one policy, and AI agents can't change it. Every other preview-iframe protection (`connect-src 'none'`, sandboxed null-origin frame, etc.) holds under both values. |
+The **Scope** column says which file a setting belongs in: **project** → `.ok/config.yml` (shared in git), **user** → `~/.ok/global.yml` (personal, all projects), **project-local** → `.ok/local/config.yml` (this machine only, gitignored). Setting a key in the wrong-scope file is ignored; `ok config validate` reports it.
+
+| Field | Type | Default | Scope | Description |
+| --- | --- | --- | --- | --- |
+| `content.dir` | string | `"."` | project | Content directory, relative to project root. Defaults to `.` (the project root) even when `.ok/` is scaffolded at the git working-tree root from a sub-folder, so opened folder and content scope align by default. To narrow scope to a sub-folder, uncomment `content.dir` in `.ok/config.yml` post-init. Excluded paths live in `.okignore`; see [Ignore patterns](/docs/features/ignore-patterns). |
+| `appearance.theme` | `"light" \| "dark" \| "system"` | (unset) | user | Editor theme. |
+| `appearance.sidebar.showHiddenFiles` | boolean | `false` | project-local | Show files whose path segments start with `.`. Server-side `.gitignore` / `.okignore` filters still apply. Toggled from the sidebar's right-click menu or the macOS **View → Show Hidden Files** item. |
+| `appearance.sidebar.showAllFiles` | boolean | `false` | project-local | Bypass every ignore filter, including both the client dot-segment drop and the server's `.gitignore` / `.okignore` / built-in exclusions. Surfaces every file on disk under the content directory (synthetic system docs stay hidden). Toggled from the sidebar's right-click menu or the macOS **View → Show All Files** item. |
+| `autoSync.enabled` | `boolean \| null` | `null` | project-local | Per-machine git auto-sync toggle. `null` means "unanswered"; the editor's onboarding modal triggers on first remote-detected open. |
+| `editor.wordWrap` | boolean | `true` | user | Soft-wrap long lines in the source-mode CodeMirror editor. A personal preference, not project-shared. Toggle from the Settings pane. |
+| `appearance.preview.autoOpen` | boolean | `true` | user | Whether the agent should open or refresh the Open Knowledge preview when it edits a doc through the MCP. Default `true` lets the agent route the preview by host capability: the host's in-app browser (Cursor preview pane, Codex's built-in browser, Claude Code Desktop) when one exists, the system browser otherwise. Set `false` to keep the agent's hands off your preview window. This is useful when you're already viewing the doc in OK Desktop, a browser tab on a second display, a non-default browser, or any flow where your extensions / accessibility tooling only work in your own browser. The agent then surfaces the URL on request but does not navigate. The change takes effect on the next preview-related tool call. Toggle from **Settings → Preferences → "Open preview when agent edits"**. |
+| `preview.scriptSrc` | `"cdn-allowlist" \| "inline-only"` | `"cdn-allowlist"` | project | Content Security Policy `script-src` for the code-block HTML preview iframe. `cdn-allowlist` lets preview embeds load library `<script src>` tags from a fixed set of trusted static CDNs (cdnjs, jsDelivr, unpkg, esm.sh), so interactive embeds like chart.js render. The allowlist is fixed: only `cdnjs.cloudflare.com`, `cdn.jsdelivr.net`, `unpkg.com`, and `esm.sh` are permitted and custom origins can't be added. If a script from another origin is blocked (a `script-src` CSP error in the browser console), inline the library directly in the code block or load a copy one of these CDNs hosts. `inline-only` is the strict policy a cloud / multi-tenant deployment opts into: inline scripts only, no external script origins. Shared across collaborators so everyone gets one policy, and AI agents can't change it. Every other preview-iframe protection (`connect-src 'none'`, sandboxed null-origin frame, etc.) holds under both values. |
+| `telemetry.localSink.enabled` | boolean | `true` | project | Write local diagnostic spans + logs under `.ok/local/` for `ok diagnose bundle` to collect. Local-only: nothing leaves the machine until you run `bundle`. Set `false` for sensitive workspaces. |
+| `telemetry.localSink.spans.maxBytes` | number | `52428800` (~50 MB) | project | Max size of the local diagnostic spans file before it rotates. |
+| `telemetry.localSink.logs.maxBytes` | number | `26214400` (~25 MB) | project | Max size of the local diagnostic logs file before it rotates. |
+| `telemetry.localSink.attributeDenylist` | `string[]` | 8 credential keys | project | Attribute keys whose values are redacted (`[REDACTED]`) before any local span/log is written. Extends the built-in denylist (`authorization`, `password`, `cookie`, etc.). |
 
 ## Folder properties
 
@@ -45,12 +52,24 @@ CLI flags (when running the bundled `ok` CLI) > environment variables > project-
 
 ## Environment variables
 
+Most users never set these — the schema settings above cover the common cases. These have no `config.yml` key or Settings toggle; they are environment-only.
+
+**Common:**
+
 | Variable | Sets |
 | --- | --- |
-| `PORT` | Server port |
-| `OK_MCP_AUTOSTART` | Set to `0` to disable MCP auto-start |
-| `OK_SHOWALL_MAX_ENTRIES` | Max entries the **Show all files** disk walk returns before it stops and marks the list truncated (default `50000`) |
+| `HOST` | Server bind host. The `--host` flag wins over this. |
+| `PORT` | Server bind port. The `--port` flag wins over this. |
+| `OK_MCP_AUTOSTART` | Set to `0` to disable auto-starting the MCP server |
+| `OK_LOG_LEVEL` | Log verbosity (`info`, `debug`, `trace`). Falls back to `LOG_LEVEL` if unset. |
+
+**Advanced / operator:**
+
+| Variable | Sets |
+| --- | --- |
 | `OPEN_KNOWLEDGE_GITHUB_CLIENT_ID` | Override the GitHub OAuth App client ID |
+| `OK_SHOWALL_MAX_ENTRIES` | Max entries the **Show all files** disk walk returns before it stops and marks the list truncated (default `50000`) |
+| `OTEL_SDK_DISABLED` | OpenTelemetry OTLP push gate. Inverted sense: set to `false` to **enable** push (it is off by default). |
 
 ## Verifying changes
 

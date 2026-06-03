@@ -1,4 +1,3 @@
-
 import type { StandardSchemaV1 } from '@standard-schema/spec';
 import { z } from 'zod';
 
@@ -36,7 +35,6 @@ export const ShareConstructUrlResponseSchema = z.discriminatedUnion('ok', [
     .loose(),
 ]) satisfies StandardSchemaV1;
 export type ShareConstructUrlResponse = z.infer<typeof ShareConstructUrlResponseSchema>;
-
 
 export const SharePublishOwnerKindSchema = z.enum(['user', 'org']) satisfies StandardSchemaV1;
 export type SharePublishOwnerKind = z.infer<typeof SharePublishOwnerKindSchema>;
@@ -134,7 +132,6 @@ export const SharePublishResponseSchema = z.discriminatedUnion('ok', [
 ]) satisfies StandardSchemaV1;
 export type SharePublishResponse = z.infer<typeof SharePublishResponseSchema>;
 
-
 export function isValidBranchName(branch: unknown): branch is string {
   if (typeof branch !== 'string') return false;
   if (branch.length === 0) return false;
@@ -155,7 +152,6 @@ export function isBranchNotFoundGitError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return /couldn'?t find remote ref|Remote branch .+ not found/i.test(message);
 }
-
 
 const BranchInfoSharedFields = {
   shareFileExists: z.boolean(),
@@ -187,7 +183,6 @@ export const BranchInfoResponseSchema = z.discriminatedUnion('detached', [
     .loose(),
 ]) satisfies StandardSchemaV1;
 export type BranchInfoResponse = z.infer<typeof BranchInfoResponseSchema>;
-
 
 export const CheckoutRequestSchema = z
   .object({

@@ -1,4 +1,3 @@
-
 import { describe, expect, test } from 'bun:test';
 import { ShareButton } from './ShareButton';
 import SRC from './ShareButton?raw';

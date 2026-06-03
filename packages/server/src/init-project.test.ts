@@ -94,21 +94,17 @@ describe('initContent', () => {
       /^# yaml-language-server: \$schema=https:\/\/unpkg\.com\/@inkeep\/open-knowledge@latest\/dist\/schemas\/v\d+\/config\.project\.schema\.json$/,
     );
     expect(configYml.split('\n')[1]).toBe('# Open Knowledge — project configuration');
-    expect(configYml).toContain('# Schema reference: packages/cli/src/config/schema.ts');
+    expect(configYml).toContain('# Schema reference: packages/core/src/config/schema.ts');
   });
 
-  it('config.yml scaffold includes Karpathy starter + picomatch nuance doc', () => {
+  it('config.yml scaffold does not teach the removed folders: key or a folder-metadata block', () => {
     initContent(testDir);
     const configYml = readFileSync(join(testDir, OK_DIR, 'config.yml'), 'utf-8');
-    expect(configYml).toContain('Folders:');
-    expect(configYml).toContain('# folders:');
-    expect(configYml).toContain("#   - match: 'external-sources/**'");
-    expect(configYml).toContain("#   - match: 'research/**'");
-    expect(configYml).toContain("#   - match: 'articles/**'");
-    expect(configYml).toContain('ok seed');
-    expect(configYml).toMatch(/foo-\*\*/);
-    expect(configYml).toMatch(/foo-\*\/\*\*/);
-    expect(configYml).toMatch(/LATER rules.*override/i);
+    expect(configYml).not.toContain('# folders:');
+    expect(configYml).not.toContain("#   - match: 'external-sources/**'");
+    expect(configYml).not.toContain('Picomatch glob cheatsheet');
+    expect(configYml).not.toContain('exact structure');
+    expect(configYml).not.toContain('Folders: metadata & templates');
   });
 
   it('config.yml scaffold describes the suggested three-tier lifecycle', () => {

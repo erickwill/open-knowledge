@@ -185,9 +185,12 @@ describe('humanFormat', () => {
     expect(out).toContain('appearance.theme');
     expect(out).toContain('project');
     expect(out).toContain('user');
+    expect(out).toContain('~/.ok/global.yml');
+    expect(out).toContain('.ok/config.yml');
+    expect(out).toContain('Move it to ~/.ok/global.yml');
   });
 
-  test('MIXED_SCOPE summarizes per-path scope assignments', () => {
+  test('MIXED_SCOPE summarizes per-path scope assignments with target files', () => {
     const out = humanFormat({
       code: 'MIXED_SCOPE',
       paths: [
@@ -195,8 +198,9 @@ describe('humanFormat', () => {
         { path: ['mcp', 'tools', 'grep', 'maxResults'], scope: 'user' },
       ],
     });
-    expect(out).toContain('content.dir → project');
-    expect(out).toContain('mcp.tools.grep.maxResults → user');
+    expect(out).toContain('content.dir → .ok/config.yml (project)');
+    expect(out).toContain('mcp.tools.grep.maxResults → ~/.ok/global.yml (user)');
+    expect(out).toContain('one file at a time');
   });
 
   test('UNKNOWN with message renders message; without message renders generic', () => {

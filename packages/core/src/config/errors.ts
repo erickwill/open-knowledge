@@ -100,6 +100,32 @@ export function isKnownConfigError(
   return KNOWN_CONFIG_ERROR_CODES.has(error.code);
 }
 
+function scopeConfigFile(scope: FieldScope): string {
+  switch (scope) {
+    case 'user':
+      return '~/.ok/global.yml';
+    case 'project':
+      return '.ok/config.yml';
+    case 'project-local':
+      return '.ok/local/config.yml';
+    case 'either':
+      return '.ok/config.yml or ~/.ok/global.yml';
+  }
+}
+
+function scopeGloss(scope: FieldScope): string {
+  switch (scope) {
+    case 'user':
+      return 'personal to you, across all projects';
+    case 'project':
+      return 'shared with your team via git';
+    case 'project-local':
+      return 'this machine only, not shared';
+    case 'either':
+      return 'user or project';
+  }
+}
+
 export function humanFormat(error: ConfigValidationError): string {
   if (!isKnownConfigError(error)) {
     return error.message ?? `Unknown error (${error.code}).`;
@@ -141,17 +167,25 @@ export function humanFormat(error: ConfigValidationError): string {
       return lines.join('\n');
     }
     case 'SCOPE_VIOLATION':
-      return `Field ${error.path.join('.')} cannot be set at ${error.actualScope} scope (expected: ${error.expectedScope}).`;
+      return [
+        `Setting ${error.path.join('.')} belongs in your ${error.expectedScope} config`,
+        `(${scopeConfigFile(error.expectedScope)} — ${scopeGloss(error.expectedScope)}),`,
+        `but it was set in the ${error.actualScope} config (${scopeConfigFile(error.actualScope)}).`,
+        `Move it to ${scopeConfigFile(error.expectedScope)}.`,
+      ].join(' ');
     case 'NOT_AGENT_SETTABLE':
       return [
-        `Field ${error.path.join('.')} is not agent-settable.`,
-        'Edit via the Settings pane or by hand-editing config.yml.',
+        `Setting ${error.path.join('.')} is human-only and can't be changed by an agent.`,
+        'Change it in the Settings pane, or edit the config.yml by hand.',
       ].join(' ');
     case 'MIXED_SCOPE': {
       const summary = error.paths
-        .map(({ path, scope }) => `  ${path.join('.')} → ${scope}`)
+        .map(({ path, scope }) => `  ${path.join('.')} → ${scopeConfigFile(scope)} (${scope})`)
         .join('\n');
-      return ['Patch contains fields targeting multiple scopes:', summary].join('\n');
+      return [
+        'This change touches settings that live in different config files. Apply them one file at a time:',
+        summary,
+      ].join('\n');
     }
     case 'REMOVED_KEY': {
       const path = error.path.join('.');

@@ -79,6 +79,16 @@ Right-click anywhere in the sidebar (empty space, a folder, or a file) to create
 
 </Steps>
 
+## Configure it (optional)
+
+Open Knowledge works out of the box; configuration is optional. When you do want to change something, settings live in three files, and the most specific one wins:
+
+- **Project** — `.ok/config.yml`, shared with your team via git
+- **User** — `~/.ok/global.yml`, personal to you across every project on your machine
+- **This machine** — `.ok/local/config.yml`, per-machine and not shared (gitignored)
+
+Change settings in the editor's **Settings** pane (Cmd/Ctrl-,), or edit `.ok/config.yml` directly (it ships with a `$schema` comment for autocomplete and inline descriptions). Full reference: [Configuration](/docs/reference/configuration).
+
 ## What's next
 
 - Per-editor setup details: [Integrations](/docs/integrations/claude-code)

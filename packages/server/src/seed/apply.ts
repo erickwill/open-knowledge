@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { installPackSkill } from './install-pack-skill.ts';
 import { assertEntryPathInProject } from './path-safety.ts';
 import { buildStarterFolderFrontmatterYaml, DEFAULT_PACK_ID, resolvePack } from './starter.ts';
 import type { ApplyError, ApplyResult, FileEntry, ScaffoldPlan, SeedOptions } from './types.ts';
@@ -90,9 +91,12 @@ export async function applySeed(plan: ScaffoldPlan, opts: SeedOptions = {}): Pro
     }
   }
 
+  const packSkillsInstalled = installPackSkill(projectDir, pack.id);
+
   return {
     applied,
     errors,
     durationMs: Date.now() - started,
+    packSkillsInstalled,
   };
 }

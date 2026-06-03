@@ -4247,8 +4247,8 @@ msgstr "Properties"
 #~ msgstr "Properties every doc in this folder gets. Set a value they all share (like a status or an owner), or add a blank field that each doc fills in on its own. Docs in subfolders get them too."
 
 #: src/components/FolderDefaultsCard.tsx
-msgid "Properties that describe this folder itself — any properties you like, just like a doc's. They don't flow into the docs inside it; to give new docs starting properties, add a template."
-msgstr "Properties that describe this folder itself — any properties you like, just like a doc's. They don't flow into the docs inside it; to give new docs starting properties, add a template."
+#~ msgid "Properties that describe this folder itself — any properties you like, just like a doc's. They don't flow into the docs inside it; to give new docs starting properties, add a template."
+#~ msgstr "Properties that describe this folder itself — any properties you like, just like a doc's. They don't flow into the docs inside it; to give new docs starting properties, add a template."
 
 #: src/components/PropertyPanel.tsx
 msgid "Property \"{trimmed}\" already exists"
@@ -5831,6 +5831,10 @@ msgstr "What is this knowledge base for?"
 #: src/components/handoff/EditWithAiPopover.tsx
 #~ msgid "What should the AI do? (optional)"
 #~ msgstr "What should the AI do? (optional)"
+
+#: src/components/FolderDefaultsCard.tsx
+msgid "What this folder is about — give it a title, description, tags, or any properties you like, just like a doc has. This describes the folder itself; it is not copied into the docs inside it. To start new docs in this folder with a ready-made set of properties, add a template instead."
+msgstr "What this folder is about — give it a title, description, tags, or any properties you like, just like a doc has. This describes the folder itself; it is not copied into the docs inside it. To start new docs in this folder with a ready-made set of properties, add a template instead."
 
 #: src/components/settings/SettingsDialogBody.tsx
 msgid "When enabled, the agent opens or refreshes the preview after each edit. Disable if you manage your own preview window (OK Desktop, a browser tab on another display, etc.)."

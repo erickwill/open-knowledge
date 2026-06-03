@@ -4242,8 +4242,8 @@ msgstr ""
 #~ msgstr ""
 
 #: src/components/FolderDefaultsCard.tsx
-msgid "Properties that describe this folder itself — any properties you like, just like a doc's. They don't flow into the docs inside it; to give new docs starting properties, add a template."
-msgstr ""
+#~ msgid "Properties that describe this folder itself — any properties you like, just like a doc's. They don't flow into the docs inside it; to give new docs starting properties, add a template."
+#~ msgstr ""
 
 #: src/components/PropertyPanel.tsx
 msgid "Property \"{trimmed}\" already exists"
@@ -5826,6 +5826,10 @@ msgstr ""
 #: src/components/handoff/EditWithAiPopover.tsx
 #~ msgid "What should the AI do? (optional)"
 #~ msgstr ""
+
+#: src/components/FolderDefaultsCard.tsx
+msgid "What this folder is about — give it a title, description, tags, or any properties you like, just like a doc has. This describes the folder itself; it is not copied into the docs inside it. To start new docs in this folder with a ready-made set of properties, add a template instead."
+msgstr ""
 
 #: src/components/settings/SettingsDialogBody.tsx
 msgid "When enabled, the agent opens or refreshes the preview after each edit. Disable if you manage your own preview window (OK Desktop, a browser tab on another display, etc.)."

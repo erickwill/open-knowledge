@@ -1,4 +1,3 @@
-
 import { relative, resolve } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import {
@@ -114,9 +113,15 @@ export async function runSeed(opts: SeedCommandOptions = {}): Promise<SeedComman
   }
 
   const packName = STARTER_PACKS[packId].name;
+
+  const skillLine =
+    applyResult.packSkillsInstalled.length > 0
+      ? `\n${dim(`Installed the ${packName} skill for: ${applyResult.packSkillsInstalled.join(', ')}`)}`
+      : '';
+
   return {
     status: 'applied',
-    message: `${success(`✓ Seeded ${packName}`)} ${dim(`(${applyResult.applied} entries, ${applyResult.durationMs}ms)`)}`,
+    message: `${success(`✓ Seeded ${packName}`)} ${dim(`(${applyResult.applied} entries, ${applyResult.durationMs}ms)`)}${skillLine}`,
     plan,
     exitCode: 0,
   };

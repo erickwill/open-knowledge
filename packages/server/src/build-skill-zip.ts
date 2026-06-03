@@ -1,4 +1,3 @@
-
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream, existsSync, statSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
@@ -43,7 +42,7 @@ export interface ResolveBundledSkillDirOptions {
 const DESKTOP_SKILLS_REL = 'Open Knowledge.app/Contents/Resources/cli/dist/assets/skills';
 
 export function resolveBundledSkillDir(
-  which: BundleId,
+  which: BundleId | (string & {}),
   opts: ResolveBundledSkillDirOptions = {},
 ): string {
   const platform = opts.platform ?? process.platform;

@@ -22,7 +22,6 @@ describe('resolveLeafSchema', () => {
     const leaf = resolveLeafSchema(ConfigSchema, ['nonExistentSection']);
     expect(leaf).toBeUndefined();
   });
-
 });
 
 describe('getLeafFieldMeta', () => {
@@ -32,9 +31,9 @@ describe('getLeafFieldMeta', () => {
       scope: 'project',
       agentSettable: false,
       defaultScope: 'project',
+      description: expect.any(String),
     });
   });
-
 
   test('returns metadata for the project-strict preview.scriptSrc leaf', () => {
     const meta = getLeafFieldMeta(ConfigSchema, ['preview', 'scriptSrc']);
@@ -42,6 +41,7 @@ describe('getLeafFieldMeta', () => {
       scope: 'project',
       agentSettable: false,
       defaultScope: 'project',
+      description: expect.any(String),
     });
   });
 
@@ -51,6 +51,7 @@ describe('getLeafFieldMeta', () => {
       scope: 'user',
       agentSettable: false,
       defaultScope: 'user',
+      description: expect.any(String),
     });
   });
 
@@ -60,6 +61,7 @@ describe('getLeafFieldMeta', () => {
       scope: 'user',
       agentSettable: false,
       defaultScope: 'user',
+      description: expect.any(String),
     });
   });
 

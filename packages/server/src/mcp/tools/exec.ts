@@ -31,7 +31,7 @@ const SOFT_CAP_BYTES = 50 * 1024;
 const BINARY_EXT_RE = /\.(png|jpe?g|gif|webp|svg|pdf|zip|tar|gz|tgz|mp4|mov|mp3|wav|ico|bmp)$/i;
 
 export const DESCRIPTION = [
-  "**STOP — native tools on in-scope markdown (when project has `.ok/`).** When the active project contains `.ok/`, do NOT use your host's native `Read`, `Grep`, or `Glob` on `.md` / `.mdx` paths inside OK's content directory — use `exec` (this tool) instead. Native file tools skip frontmatter, backlinks, shadow-repo activity, and project git history that `exec` returns for every matched wiki file. Reserve native `Read`/`Grep`/`Glob` for source code, non-markdown paths, and projects without `.ok/`.",
+  '**STOP — when the project has `.ok/`, do NOT use native `Read`/`Grep`/`Glob` on in-scope `.md`/`.mdx`; use `exec` (this tool).** Native tools skip the frontmatter, backlinks, shadow-repo activity, and git history `exec` returns per wiki file. Reserve native tools for source code, non-markdown, and projects without `.ok/`. (Full rule + escape hatch: the `open-knowledge` skill / MCP `instructions`.)',
   '',
   'Run a read-only bash-like command against the project content directory. Returns raw stdout plus enriched metadata for every wiki file referenced (frontmatter, backlink/forward-link counts, shadow-repo activity with agent/human attribution).',
   '',

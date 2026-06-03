@@ -108,11 +108,11 @@ export function renderInstructionsFile(body: string): string {
  * on drift. See \`packages/server/scripts/generate-instructions.ts\` for the
  * extraction contract (4 H2 sections by exact-match heading text).
  *
- * Note: legacy comment said "compressed to ≤ ~1,500 bytes" for Claude's
- * 2 KB per-server instructions cap. The generated body currently exceeds
- * that cap (~9-10 KB; ceiling pinned by generate-instructions.test.ts);
- * a warning fires when over 2 KB. Tightening SKILL.md sections is the
- * follow-up.
+ * The generated body intentionally exceeds Claude's 2 KB per-server cap —
+ * that cap fires a warning, not an error. The body carries the cross-host
+ * STOP / Reads / Preview / Scope-recap contract by design; its structural
+ * ceiling is pinned by generate-instructions.test.ts. Shrink only by tightening
+ * those SKILL.md sections, never by dropping load-bearing rules.
  */
 import type { Config } from '../config/schema.ts';
 

@@ -1,4 +1,3 @@
-
 import { existsSync, lstatSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { CONFIG_SCHEMA_MAJOR_PATH, LOCAL_DIR, OK_DIR } from '@inkeep/open-knowledge-core';
@@ -56,7 +55,7 @@ export function buildConfigYmlContent(_version: string, options?: BuildConfigYml
 #     -> ~/${OK_DIR}/global.yml         (user defaults)
 #     -> ./${OK_DIR}/config.yml         (this file)
 #
-# Schema reference: packages/cli/src/config/schema.ts
+# Schema reference: packages/core/src/config/schema.ts
 
 
 # --- Content ---------------------------------------------------------------
@@ -103,52 +102,6 @@ export function buildConfigYmlContent(_version: string, options?: BuildConfigYml
 #
 # appearance:
 #   theme: system            # 'light' | 'dark' | 'system'
-
-
-# --- Folders: per-folder frontmatter defaults -------------------------------
-#
-# TL;DR glob gotcha: \`**\` is ONLY a multi-segment wildcard when it is a
-# standalone path segment. \`foo-**\` behaves like \`foo-*\` (single segment, NOT
-# descendants). Use \`foo/**\` or \`foo-*/**\` to match descendants.
-#
-# Declare title/description/tags defaults keyed by glob \`match:\`. Rules merge
-# with a file's own frontmatter at read time:
-#   - Per scalar (title, description): the FILE wins when declared; folder
-#     rule fills in blanks.
-#   - Tags: concatenated across ALL matching rules (in declaration order) with
-#     file tags last; first-occurrence preserved on dedup.
-#   - Evaluation is positional — LATER rules in this array override earlier
-#     rules for scalars. Put general rules first, specific rules last.
-#
-# Picomatch glob cheatsheet:
-#   \`match: 'foo'\`         — matches ONLY the folder \`foo\` itself
-#   \`match: 'foo/**'\`      — matches \`foo\` AND all descendants (files + dirs)
-#   \`match: 'foo-*'\`       — matches \`foo-1\`, \`foo-bar\` (single segment)
-#   \`match: 'foo-**'\`      — behaves like \`foo-*\` (NOT multi-segment); see
-#                              TL;DR above. Use \`foo-*/**\` if you want
-#                              \`foo-X\` plus its descendants.
-#
-# Tip: run \`ok seed\` to scaffold the Karpathy three-layer starter
-# (external-sources/, research/, articles/) with matching \`folders:\` entries.
-# The commented example below is the exact structure \`ok seed\` writes.
-#
-# Example:
-# folders:
-#   - match: 'external-sources/**'
-#     frontmatter:
-#       title: External Sources
-#       description: Raw preserved sources (URLs, PDFs, files). Immutable — captured verbatim via \`ingest\`. No analysis in these files; takeaways belong in \`research/\`.
-#       tags: [source, immutable, layer-ingest]
-#   - match: 'research/**'
-#     frontmatter:
-#       title: Research
-#       description: Provisional analysis synthesizing external sources. Produced by the \`research\` tool. Promote to \`articles/\` via \`consolidate\` when the team decides.
-#       tags: [research, provisional, layer-research]
-#   - match: 'articles/**'
-#     frontmatter:
-#       title: Articles
-#       description: Canonical knowledge committed after a team decision. Produced by the \`consolidate\` tool with a \`supersedes:\` chain tying back to the research that preceded it.
-#       tags: [article, canonical, layer-consolidate]
 `;
   const contentDir = options?.contentDir;
   if (contentDir === undefined || contentDir === '.') return template;

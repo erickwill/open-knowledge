@@ -1,4 +1,3 @@
-
 import { spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import {
@@ -680,15 +679,13 @@ function readUploadBody(req: IncomingMessage, projectDir: string): Promise<Uploa
     let pipelineError: unknown;
     let fileEventFired = false;
 
-
     const fail = (reason: UploadWriteReason, cause: unknown) => {
       if (settled) return;
       settled = true;
       if (tempPath) {
         try {
           unlinkSync(tempPath);
-        } catch {
-        }
+        } catch {}
       }
       reject(cause instanceof UploadWriteError ? cause : new UploadWriteError(reason, cause));
     };
@@ -1702,8 +1699,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
           return { cluster, category, tags };
         }
       }
-    } catch {
-    }
+    } catch {}
     try {
       const filePath = resolveDocPath(docName);
       if (!filePath || !existsSync(filePath)) return EMPTY_METADATA;
@@ -3210,6 +3206,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
 
         let editError: import('@inkeep/open-knowledge-core').FmEditError | undefined;
         let applied = false;
+        let bodyMutated = false;
         const appliedKeys: string[] = [];
 
         try {
@@ -3255,6 +3252,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
                     result.nextFenced + (needsFenceSeparator ? '\n' : '') + currentBody;
                   composeAndWriteRawBody(session.dc.document, newFull, 'agent');
                   recordFrontmatterEditSurface('mcp-write');
+                  bodyMutated = true;
                 }
                 applied = true;
               }, session.origin);
@@ -3321,6 +3319,13 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
           );
           incrementAgentWriteCalls();
           countNormalizedSummary(normalizedSummary);
+          if (bodyMutated) {
+            const storeFailure = await flushDiskAndDetectFailure(resolvedDocName);
+            if (storeFailure) {
+              respondPersistenceFailure(res, storeFailure, 'frontmatter-patch');
+              return;
+            }
+          }
           flushDocToGit(resolvedDocName, 'frontmatter-patch');
         }
 
@@ -4335,6 +4340,12 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
           return;
         }
 
+        const storeFailure = await flushDiskAndDetectFailure(docName);
+        if (storeFailure) {
+          respondPersistenceFailure(res, storeFailure, 'agent-patch');
+          return;
+        }
+
         flushDocToGit(docName, 'agent-patch');
 
         agentFocusBroadcaster?.setFocus(agentId, {
@@ -5300,7 +5311,6 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
           replaceRawBody(document, markdown, rollbackEmbedResolver);
         }, ROLLBACK_ORIGIN);
 
-
         let summaryResponse: SummaryResponse | undefined;
         switch (actor.kind) {
           case 'agent': {
@@ -5356,6 +5366,12 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
           }
         }
         renameAttributionCounter().add(1, { kind: 'rollback', attribution_kind: actor.kind });
+
+        const storeFailure = await flushDiskAndDetectFailure(docName);
+        if (storeFailure) {
+          respondPersistenceFailure(res, storeFailure, 'rollback');
+          return;
+        }
 
         flushDocToGit(docName, 'rollback');
 
@@ -5927,8 +5943,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
       if (Date.now() - stat.mtimeMs > RESCUE_MAX_AGE_MS) {
         try {
           unlinkSync(filePath);
-        } catch {
-        }
+        } catch {}
       } else {
         const content = readFileSync(filePath, 'utf-8');
         res.writeHead(200, {
@@ -7343,8 +7358,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
       if (existsSync(tempPath)) {
         try {
           unlinkSync(tempPath);
-        } catch {
-        }
+        } catch {}
       }
     };
 
@@ -7564,7 +7578,6 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
     }
   }
 
-
   const LOCAL_OP_CLONE_KEY = '/api/local-op/clone';
   const LOCAL_OP_OPEN_KEY = '/api/local-op/open';
   const LOCAL_OP_OK_INIT_KEY = '/api/local-op/ok-init';
@@ -7657,8 +7670,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
         if (!res.writableEnded && !res.destroyed) {
           try {
             res.write(`${JSON.stringify(event)}\n`);
-          } catch {
-          }
+          } catch {}
         }
       },
     });
@@ -8002,7 +8014,6 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
     },
   );
 
-
   const LOCAL_OP_AUTH_LOGIN_KEY = '/api/local-op/auth/login';
   const LOCAL_OP_AUTH_STATUS_KEY = '/api/local-op/auth/status';
   const LOCAL_OP_AUTH_REPOS_KEY = '/api/local-op/auth/repos';
@@ -8082,8 +8093,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
         if (!res.writableEnded && !res.destroyed) {
           try {
             res.write(`${JSON.stringify(event)}\n`);
-          } catch {
-          }
+          } catch {}
         }
       },
     });
@@ -8103,8 +8113,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
       if (!res.writableEnded && !res.destroyed) {
         try {
           res.end();
-        } catch {
-        }
+        } catch {}
       }
       if (authLoginInFlight === flow) {
         authLoginInFlight = null;
@@ -8169,8 +8178,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
           try {
             parsed = JSON.parse(lines[i] as string);
             break;
-          } catch {
-          }
+          } catch {}
         }
         if (parsed !== null) {
           successResponse(res, 200, LocalOpAuthStatusSuccessSchema, parsed, {
@@ -8263,8 +8271,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
         let evt: { type?: unknown; message?: unknown } | null = null;
         try {
           evt = JSON.parse(line) as { type?: unknown; message?: unknown };
-        } catch {
-        }
+        } catch {}
         if (evt && evt.type === 'error') {
           const detail = typeof evt.message === 'string' ? evt.message : undefined;
           writeStreamError(
@@ -8278,8 +8285,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
         if (!res.writableEnded && !res.destroyed) {
           try {
             res.write(`${line}\n`);
-          } catch {
-          }
+          } catch {}
         }
       }
     });
@@ -8454,8 +8460,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
           try {
             parsed = JSON.parse(lines[i] as string);
             break;
-          } catch {
-          }
+          } catch {}
         }
         if (parsed !== null) {
           successResponse(res, 200, LocalOpAuthPatSuccessSchema, parsed, {
@@ -8488,7 +8493,6 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
         checkLocalOpSecurity(req, res, { handler: HANDLE_LOCAL_OP_AUTH_PAT }),
     },
   );
-
 
   const HANDLE_LOCAL_OP_AUTH_IDENTITY = 'local-op-auth-identity';
   async function handleLocalOpAuthIdentity(
@@ -8528,7 +8532,6 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
     }
   }
 
-
   const LOCAL_OP_AUTH_SET_IDENTITY_KEY = '/api/local-op/auth/set-identity';
 
   const HANDLE_LOCAL_OP_AUTH_SET_IDENTITY = 'local-op-auth-set-identity';
@@ -8560,8 +8563,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
         writeGitIdentity(projectDir, name, email);
         void getSyncEngine?.()
           ?.refreshIdentity()
-          .catch(() => {
-          });
+          .catch(() => {});
         successResponse(
           res,
           200,
@@ -8587,8 +8589,6 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
         checkLocalOpSecurity(req, res, { handler: HANDLE_LOCAL_OP_AUTH_SET_IDENTITY }),
     },
   );
-
-
 
   async function handleSyncStatus(req: IncomingMessage, res: ServerResponse): Promise<void> {
     if (!checkLocalOpSecurity(req, res, { handler: 'sync-status' })) return;
@@ -8900,7 +8900,6 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
       );
     }
   }
-
 
   async function handleSeedPlan(req: IncomingMessage, res: ServerResponse): Promise<void> {
     if (!checkLocalOpSecurity(req, res, { handler: 'seed-plan' })) return;
@@ -9450,8 +9449,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
           frontmatter = parsed as Record<string, unknown>;
         }
-      } catch {
-      }
+      } catch {}
       body = raw.slice(match[0].length);
     }
     return { frontmatter, body };
@@ -10406,8 +10404,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
         if (responseBody.ok) {
           void getSyncEngine?.()
             ?.refreshRemote()
-            .catch(() => {
-            });
+            .catch(() => {});
         }
         successResponse(res, 200, SharePublishResponseSchema, responseBody, {
           handler: SHARE_PUBLISH_HANDLER_TAG,
@@ -10447,8 +10444,7 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
               },
               entry.event ?? entry.message,
             );
-          } catch {
-          }
+          } catch {}
         }
         successResponse(
           res,

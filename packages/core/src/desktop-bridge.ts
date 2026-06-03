@@ -232,6 +232,7 @@ interface OkScaffoldApplyResult {
   applied: number;
   errors: OkScaffoldApplyError[];
   durationMs: number;
+  packSkillsInstalled: string[];
 }
 
 interface OkSeedError {

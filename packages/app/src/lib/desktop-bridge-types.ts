@@ -40,6 +40,7 @@ export interface OkScaffoldApplyResult {
   applied: number;
   errors: OkScaffoldApplyError[];
   durationMs: number;
+  packSkillsInstalled: string[];
 }
 export interface OkSeedError {
   kind: 'no-project' | 'prerequisite-missing' | 'invalid-root' | 'internal';
@@ -350,9 +351,7 @@ export type OkLocalOpAuthReposResponse =
   | { ok: true; host: string; repos: OkLocalOpRepoEntry[] }
   | { ok: false; error: string };
 
-export type OkLocalOpAuthSignoutResponse =
-  | { ok: true }
-  | { ok: false; error?: string };
+export type OkLocalOpAuthSignoutResponse = { ok: true } | { ok: false; error?: string };
 
 type OkEditorActiveTargetSnapshot =
   | { readonly kind: 'doc'; readonly identifier: string }

@@ -5,6 +5,7 @@ export interface FieldMeta {
   scope: FieldScope;
   agentSettable: boolean;
   defaultScope?: WriteScope;
+  description: string;
 }
 
 const SINGLETON_KEY = Symbol.for('@inkeep/open-knowledge/field-registry');

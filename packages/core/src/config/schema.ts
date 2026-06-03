@@ -34,6 +34,8 @@ export const ConfigSchema = z.looseObject({
           scope: 'project',
           agentSettable: false,
           defaultScope: 'project',
+          description:
+            'Folder Open Knowledge reads and writes documents under, relative to the project root (the folder that contains .ok/). Defaults to the project root. Exclude paths with .okignore.',
         })
         .default('.'),
     })
@@ -48,6 +50,8 @@ export const ConfigSchema = z.looseObject({
           scope: 'project',
           agentSettable: false,
           defaultScope: 'project',
+          description:
+            "Security policy for scripts in code-block preview embeds. 'cdn-allowlist' allows <script src> from a fixed set of trusted CDNs; 'inline-only' is the strict policy for cloud / multi-tenant deployments. Shared across collaborators.",
         })
         .default('cdn-allowlist'),
     })
@@ -60,6 +64,8 @@ export const ConfigSchema = z.looseObject({
           scope: 'user',
           agentSettable: false,
           defaultScope: 'user',
+          description:
+            "Editor color theme: 'light', 'dark', or 'system' (follow the OS). A personal preference (user scope) — not shared with the project.",
         })
         .optional(),
       preview: z
@@ -70,6 +76,8 @@ export const ConfigSchema = z.looseObject({
               scope: 'user',
               agentSettable: false,
               defaultScope: 'user',
+              description:
+                'When on, the agent opens or refreshes the live preview after each edit. Turn off if you manage your own preview window. A personal preference (user scope).',
             })
             .default(true),
         })
@@ -82,6 +90,8 @@ export const ConfigSchema = z.looseObject({
               scope: 'project-local',
               agentSettable: false,
               defaultScope: 'project-local',
+              description:
+                'Show dot-prefixed entries (e.g. .ok/, .okignore) in the file tree. Per-machine (project-local) — not shared with collaborators.',
             })
             .default(false),
           showAllFiles: z
@@ -90,6 +100,8 @@ export const ConfigSchema = z.looseObject({
               scope: 'project-local',
               agentSettable: false,
               defaultScope: 'project-local',
+              description:
+                'Show every file, including those excluded by .gitignore / .okignore. Per-machine (project-local) — not shared.',
             })
             .default(false),
         })
@@ -104,6 +116,8 @@ export const ConfigSchema = z.looseObject({
           scope: 'user',
           agentSettable: false,
           defaultScope: 'user',
+          description:
+            'Soft-wrap long lines in the source (CodeMirror) editor. A personal preference (user scope).',
         })
         .default(true),
     })
@@ -116,6 +130,8 @@ export const ConfigSchema = z.looseObject({
           scope: 'project-local',
           agentSettable: false,
           defaultScope: 'project-local',
+          description:
+            'Whether this machine auto-pulls and auto-pushes git commits for this project. null = not chosen yet (onboarding asks). Per-machine (project-local) — not shared.',
         })
         .nullable()
         .default(null),
@@ -131,6 +147,8 @@ export const ConfigSchema = z.looseObject({
               scope: 'project',
               agentSettable: false,
               defaultScope: 'project',
+              description:
+                'Write local diagnostic spans + logs under .ok/local/ for `ok diagnose bundle`. Local-only — never leaves the machine until you run bundle. Set false for sensitive workspaces. Shared across collaborators.',
             })
             .default(true),
           spans: z
@@ -141,6 +159,8 @@ export const ConfigSchema = z.looseObject({
                   scope: 'project',
                   agentSettable: false,
                   defaultScope: 'project',
+                  description:
+                    'Maximum size, in bytes, of the local diagnostic spans file before it rotates (default ~50 MB).',
                 })
                 .default(DEFAULT_SPANS_MAX_BYTES),
             })
@@ -153,6 +173,8 @@ export const ConfigSchema = z.looseObject({
                   scope: 'project',
                   agentSettable: false,
                   defaultScope: 'project',
+                  description:
+                    'Maximum size, in bytes, of the local diagnostic logs file before it rotates (default ~25 MB).',
                 })
                 .default(DEFAULT_LOGS_MAX_BYTES),
             })
@@ -163,6 +185,8 @@ export const ConfigSchema = z.looseObject({
               scope: 'project',
               agentSettable: false,
               defaultScope: 'project',
+              description:
+                'Telemetry attribute keys whose values are redacted before any local span/log is written (credential / secret guard). Extends the built-in denylist.',
             })
             .default([...DEFAULT_TELEMETRY_ATTRIBUTE_DENYLIST]),
         })

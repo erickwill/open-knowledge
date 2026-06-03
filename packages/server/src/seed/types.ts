@@ -1,4 +1,3 @@
-
 import type { PackId } from './starter.ts';
 
 export interface FileEntry {
@@ -23,6 +22,7 @@ export interface ApplyResult {
   applied: number;
   errors: ApplyError[];
   durationMs: number;
+  packSkillsInstalled: string[];
 }
 
 export interface ApplyError {

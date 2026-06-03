@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { BundleId } from '../src/build-skill-zip.ts';
@@ -70,6 +70,25 @@ export function buildSkillBundles(paths: SkillBundlePaths = defaultPaths()): Com
     results.push({ bundle, composed, placeholders, outputPath });
   }
   return results;
+}
+
+export function buildPackSkills(paths: SkillBundlePaths = defaultPaths()): string[] {
+  const packsSrc = join(paths.skillsDir, 'packs');
+  if (!existsSync(packsSrc)) return [];
+  const resolve = sharedResolver(paths.skillsDir);
+  const built: string[] = [];
+  for (const entry of readdirSync(packsSrc, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const sourcePath = join(packsSrc, entry.name, 'SKILL.md');
+    if (!existsSync(sourcePath)) continue;
+    const { composed } = composeSkill(readFileSync(sourcePath, 'utf-8'), resolve);
+    const outputPath = join(paths.distDir, 'packs', entry.name, 'SKILL.md');
+    rmSync(join(paths.distDir, 'packs', entry.name), { recursive: true, force: true });
+    mkdirSync(dirname(outputPath), { recursive: true });
+    writeFileSync(outputPath, composed, 'utf-8');
+    built.push(entry.name);
+  }
+  return built;
 }
 
 interface ByteEqualityResult {
@@ -144,6 +163,12 @@ if (import.meta.main) {
           ? ` (resolved ${b.placeholders.length} placeholder(s): ${b.placeholders.join(', ')})`
           : ' (no placeholders)';
       console.log(`[build-skill-bundles] composed ${b.bundle} → ${b.outputPath}${note}`);
+    }
+    const packs = buildPackSkills();
+    if (packs.length > 0) {
+      console.log(
+        `[build-skill-bundles] composed ${packs.length} pack skill(s): ${packs.join(', ')}`,
+      );
     }
   }
 }

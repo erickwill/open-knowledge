@@ -36,10 +36,10 @@ describe('STARTER_FOLDERS — Karpathy three-layer starter pack', () => {
   test('external-sources description references save-verbatim + ingest + immutability + traceability', () => {
     const entry = STARTER_FOLDERS.find((f) => f.path === 'external-sources');
     expect(entry).toBeDefined();
-    expect(entry?.description).toContain('SAVED verbatim');
+    expect(entry?.description).toContain('saved verbatim');
     expect(entry?.description).toContain('Immutable');
     expect(entry?.description).toContain('ingest');
-    expect(entry?.description.toLowerCase()).toMatch(/cite|traceab/);
+    expect(entry?.description).toContain('research/');
     expect(entry?.tags).toEqual(['source', 'immutable', 'layer-ingest']);
     expect(entry?.starterTemplate).toBe('clip');
   });
@@ -48,11 +48,10 @@ describe('STARTER_FOLDERS — Karpathy three-layer starter pack', () => {
     const entry = STARTER_FOLDERS.find((f) => f.path === 'research');
     expect(entry).toBeDefined();
     expect(entry?.description).toContain('Provisional analysis');
-    expect(entry?.description).toContain('research');
+    expect(entry?.description).toContain('external-sources');
     expect(entry?.description).toContain('status: provisional');
-    expect(entry?.description).toContain('sources:');
     expect(entry?.description).toContain('consolidate');
-    expect(entry?.description.toLowerCase()).toMatch(/cite|sourced/);
+    expect(entry?.description.toLowerCase()).toMatch(/cite/);
     expect(entry?.tags).toEqual(['research', 'provisional', 'layer-research']);
     expect(entry?.starterTemplate).toBe('research-log');
   });
@@ -61,10 +60,9 @@ describe('STARTER_FOLDERS — Karpathy three-layer starter pack', () => {
     const entry = STARTER_FOLDERS.find((f) => f.path === 'articles');
     expect(entry).toBeDefined();
     expect(entry?.description).toContain('Canonical knowledge');
-    expect(entry?.description).toContain('consolidate');
-    expect(entry?.description).toContain('status: canonical');
+    expect(entry?.description).toContain('source of truth');
     expect(entry?.description).toContain('supersedes:');
-    expect(entry?.description).toContain('external-sources');
+    expect(entry?.description).toContain('research/');
     expect(entry?.tags).toEqual(['article', 'canonical', 'layer-consolidate']);
     expect(entry?.starterTemplate).toBe('article');
   });
@@ -110,9 +108,10 @@ describe('LOG_MD_TEMPLATE', () => {
     expect(LOG_MD_TEMPLATE).toContain('# Work Log');
   });
 
-  test('includes example entry shape as HTML comment (not active content)', () => {
-    expect(LOG_MD_TEMPLATE).toContain('<!-- Example entry shape:');
-    expect(LOG_MD_TEMPLATE).toContain('-->');
+  test('is slim — log discipline lives in the pack skill, not in the log body', () => {
+    expect(LOG_MD_TEMPLATE).not.toContain('<!-- Example entry shape:');
+    expect(LOG_MD_TEMPLATE).not.toContain('What to log:');
+    expect(LOG_MD_TEMPLATE).toContain('knowledge-base skill');
   });
 });
 
