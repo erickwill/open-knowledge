@@ -48,6 +48,33 @@ case "$TEST_STUB_BEHAVIOR" in
     echo "stub: synthetic non-1 failure (exit \${TEST_FAIL_EXIT_CODE:-1})" >&2
     exit "\${TEST_FAIL_EXIT_CODE:-1}"
     ;;
+  hang-then-pass)
+    # Attempt 1 blocks far past the wrapper's BUN_INSTALL_ATTEMPT_TIMEOUT so
+    # the watchdog must kill it; attempt 2 succeeds. Trap TERM to exit promptly
+    # (and reap the inner sleep) so the SIGTERM path resolves cleanly.
+    if [ "$attempt" -le 1 ]; then
+      sleep "\${TEST_HANG_SECONDS:-30}" & sleep_pid=$!
+      trap 'kill "$sleep_pid" 2>/dev/null; exit 143' TERM
+      wait "$sleep_pid"
+      exit 0
+    fi
+    echo "stub: pass on attempt $attempt"
+    exit 0
+    ;;
+  always-hang)
+    # Every attempt hangs until the watchdog SIGTERMs it.
+    sleep "\${TEST_HANG_SECONDS:-30}" & sleep_pid=$!
+    trap 'kill "$sleep_pid" 2>/dev/null; exit 143' TERM
+    wait "$sleep_pid"
+    exit 0
+    ;;
+  always-hang-ignore-term)
+    # Ignore SIGTERM so the watchdog must escalate to SIGKILL. Loop short
+    # sleeps (rather than one long sleep) so the orphan the uncatchable SIGKILL
+    # leaves behind is bounded to ~1s instead of the full hang duration.
+    trap '' TERM
+    while :; do sleep 1; done
+    ;;
   *)
     echo "stub: unknown TEST_STUB_BEHAVIOR='$TEST_STUB_BEHAVIOR'" >&2
     exit 2
@@ -214,5 +241,122 @@ describe('bun-install-ci.sh — retry wrapper for `bun install --frozen-lockfile
     const out = combinedOutput(result);
     expect(out).toContain('::error::');
     expect(out).toContain('BUN_INSTALL_RETRY_SLEEP_BASE');
+  });
+
+  test('timeout recovery: attempt 1 hangs (killed by watchdog) then attempt 2 passes → exit 0 with one timeout ::warning::', () => {
+    const ctx = setupStub();
+    const result = runWrapper({
+      ...ctx,
+      behavior: 'hang-then-pass',
+      maxAttempts: 3,
+      extraEnv: { BUN_INSTALL_ATTEMPT_TIMEOUT: '3', BUN_INSTALL_KILL_GRACE: '1' },
+      timeoutMs: 20000,
+    });
+
+    expect(result.signal).toBeNull();
+    expect(result.status).toBe(0);
+    const out = combinedOutput(result);
+    expect(countMatches(out, '::warning::')).toBe(1);
+    expect(out).toContain('timed out after 3s');
+    expect(out).not.toContain('::error::');
+  }, 30000); // Bun per-test timeout > the 3s budget + retries + the 20s spawnSync net
+
+  test('timeout exhaustion: every attempt hangs → exit 124 with (N-1) ::warning::s + 1 ::error::', () => {
+    const ctx = setupStub();
+    const result = runWrapper({
+      ...ctx,
+      behavior: 'always-hang',
+      maxAttempts: 2,
+      extraEnv: { BUN_INSTALL_ATTEMPT_TIMEOUT: '3', BUN_INSTALL_KILL_GRACE: '1' },
+      timeoutMs: 20000,
+    });
+
+    expect(result.signal).toBeNull();
+    expect(result.status).toBe(124);
+    const out = combinedOutput(result);
+    expect(countMatches(out, '::warning::')).toBe(1);
+    expect(countMatches(out, '::error::')).toBe(1);
+    expect(out).toContain('timed out after 3s');
+  }, 30000); // 2 attempts x 3s budget exceeds Bun's 5s default per-test timeout
+
+  test('SIGKILL escalation: a SIGTERM-ignoring hang is force-killed and normalized to exit 124', () => {
+    const ctx = setupStub();
+    const result = runWrapper({
+      ...ctx,
+      behavior: 'always-hang-ignore-term',
+      maxAttempts: 1,
+      extraEnv: {
+        BUN_INSTALL_ATTEMPT_TIMEOUT: '3',
+        BUN_INSTALL_KILL_GRACE: '1',
+      },
+      timeoutMs: 20000,
+    });
+
+    expect(result.signal).toBeNull();
+    expect(result.status).toBe(124);
+    expect(countMatches(combinedOutput(result), '::error::')).toBe(1);
+  }, 30000); // 3s budget + 1s grace + SIGKILL can edge past Bun's 5s default
+
+  test('timeout disabled (BUN_INSTALL_ATTEMPT_TIMEOUT=0): direct path, happy install exits 0 with no annotations', () => {
+    const ctx = setupStub();
+    const result = runWrapper({
+      ...ctx,
+      behavior: 'always-pass',
+      extraEnv: { BUN_INSTALL_ATTEMPT_TIMEOUT: '0' },
+    });
+
+    expect(result.status).toBe(0);
+    const out = combinedOutput(result);
+    expect(out).not.toContain('::warning::');
+    expect(out).not.toContain('::error::');
+  });
+
+  test('timeout disabled + failure: direct path still retries and recovers', () => {
+    const ctx = setupStub();
+    const result = runWrapper({
+      ...ctx,
+      behavior: 'fail-then-pass',
+      maxAttempts: 2,
+      extraEnv: { BUN_INSTALL_ATTEMPT_TIMEOUT: '0' },
+    });
+
+    expect(result.status).toBe(0);
+    const out = combinedOutput(result);
+    expect(countMatches(out, '::warning::')).toBe(1);
+    expect(out).toContain('failed (exit 1)');
+    expect(out).not.toContain('timed out');
+    expect(out).not.toContain('::error::');
+  });
+
+  test('input validation: non-integer BUN_INSTALL_ATTEMPT_TIMEOUT exits 64', () => {
+    const ctx = setupStub();
+    const result = runWrapper({
+      ...ctx,
+      behavior: 'always-pass',
+      extraEnv: { BUN_INSTALL_ATTEMPT_TIMEOUT: 'soon' },
+      timeoutMs: 2000,
+    });
+
+    expect(result.signal).toBeNull();
+    expect(result.status).toBe(64);
+    const out = combinedOutput(result);
+    expect(out).toContain('::error::');
+    expect(out).toContain('BUN_INSTALL_ATTEMPT_TIMEOUT');
+  });
+
+  test('input validation: non-integer BUN_INSTALL_KILL_GRACE exits 64', () => {
+    const ctx = setupStub();
+    const result = runWrapper({
+      ...ctx,
+      behavior: 'always-pass',
+      extraEnv: { BUN_INSTALL_KILL_GRACE: '1.5' },
+      timeoutMs: 2000,
+    });
+
+    expect(result.signal).toBeNull();
+    expect(result.status).toBe(64);
+    const out = combinedOutput(result);
+    expect(out).toContain('::error::');
+    expect(out).toContain('BUN_INSTALL_KILL_GRACE');
   });
 });
