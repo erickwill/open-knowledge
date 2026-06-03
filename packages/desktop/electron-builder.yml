@@ -238,6 +238,27 @@ dmg:
   # because we only ship arm64 today; an x64 / universal build would need
   # a parallel artifactName + a splash decision rule.
   artifactName: ${productName}-${arch}.${ext}
+  title: ${productName}
+  # The "drag me to Applications" arrow and branding are painted INTO the
+  # background art — Finder only composites the .app icon and the /Applications
+  # alias on top of it, at the `contents` coordinates below. `window` sets the
+  # installer-window size, and the 1x art must match it exactly. A sibling
+  # `build/dmg-background@2x.png` at twice these dimensions (1080x760) supplies
+  # the Retina representation and is auto-composited by electron-builder when it
+  # sits next to the 1x file.
+  background: build/dmg-background.png
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 140
+      y: 130
+      type: file
+    - x: 400
+      y: 130
+      type: link
+      path: /Applications
+  iconSize: 100
 
 # Flip fuses (D17 LOCKED, spec §8.9) on the packed .app before code signing.
 afterPack: scripts/afterPack.mjs
