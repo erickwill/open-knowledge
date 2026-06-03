@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDocumentContext } from '@/editor/DocumentContext';
 import { useGitSyncStatusDetailed } from '@/hooks/use-git-sync-status';
 import { scheduleClipboardWrite } from '@/lib/share/clipboard-adapter';
@@ -71,27 +70,24 @@ export function ShareButton({ onClickWhenNoRemote }: ShareButtonProps) {
         if (!open) setClipboardFailedUrl(null);
       }}
     >
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverAnchor asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label={t`Share doc`}
-              onClick={handleClick}
-              disabled={busy}
-              className="gap-1.5 text-muted-foreground px-1.5"
-              data-testid="share-button"
-            >
-              <Share2 className="size-3.5" aria-hidden />
-              <Trans>Share</Trans>
-            </Button>
-          </PopoverAnchor>
-        </TooltipTrigger>
-        <TooltipContent>
+      {/* No tooltip: the visible "Share" label already names the control, so a
+          tooltip repeating it would be redundant. Icon-only toolbar siblings
+          (e.g. SyncStatusBadge) still carry a tooltip — they have no visible
+          text. */}
+      <PopoverAnchor asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={t`Share doc`}
+          onClick={handleClick}
+          disabled={busy}
+          className="gap-1.5 text-muted-foreground px-1.5"
+          data-testid="share-button"
+        >
+          <Share2 className="size-3.5" aria-hidden />
           <Trans>Share</Trans>
-        </TooltipContent>
-      </Tooltip>
+        </Button>
+      </PopoverAnchor>
       <PopoverContent
         className="flex w-80 flex-col gap-2"
         data-testid="share-button-fallback-popover"

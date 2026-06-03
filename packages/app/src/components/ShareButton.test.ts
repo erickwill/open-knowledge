@@ -48,10 +48,10 @@ describe('ShareButton — load-bearing structural guards', () => {
     expect(SRC).toContain('Link ready but could not copy to clipboard.');
   });
 
-  test('renders a Tooltip wrapping the Button trigger (consistent with sibling cluster)', () => {
-    expect(SRC).toContain("from '@/components/ui/tooltip'");
-    expect(SRC).toContain('<Tooltip>');
-    expect(SRC).toMatch(/<TooltipContent>\s*<Trans>Share<\/Trans>\s*<\/TooltipContent>/);
+  test('does NOT wrap its labeled trigger in a redundant Tooltip (visible "Share" text is the affordance)', () => {
+    expect(SRC).not.toContain("from '@/components/ui/tooltip'");
+    expect(SRC).not.toContain('<TooltipContent>');
+    expect(SRC).toContain('<Trans>Share</Trans>');
   });
 
   test('Button carries an aria-label so the icon-bearing affordance is screen-reader navigable', () => {

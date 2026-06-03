@@ -10,7 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useIsEmbedded } from '@/hooks/use-is-embedded';
 import { useConfigContext } from '@/lib/config-context';
 import { VISIBLE_TARGETS } from '@/lib/handoff/targets';
@@ -77,25 +76,18 @@ export function OpenInAgentMenu({ input, open, onOpenChange }: OpenInAgentMenuPr
 
   return (
     <DropdownMenu open={menuOpen} onOpenChange={handleOpenChange}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={triggerDisabled}
-              className="gap-1.5 text-muted-foreground px-1.5"
-              data-testid="open-in-agent-trigger"
-            >
-              <Sparkles className="size-3.5" aria-hidden="true" />
-              <Trans>Open with AI</Trans>
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={triggerDisabled}
+          className="gap-1.5 text-muted-foreground px-1.5"
+          data-testid="open-in-agent-trigger"
+        >
+          <Sparkles className="size-3.5" aria-hidden="true" />
           <Trans>Open with AI</Trans>
-        </TooltipContent>
-      </Tooltip>
+        </Button>
+      </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-[220px]" data-testid="open-in-agent-menu">
         {installedTargets.map((target) => {
           const installState = states[target.id];

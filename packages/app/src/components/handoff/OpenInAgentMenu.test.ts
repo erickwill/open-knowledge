@@ -42,4 +42,10 @@ describe('OpenInAgentMenu source-level guards', () => {
     expect(triggerOpenTag).not.toBeNull();
     expect(triggerOpenTag?.[0]).not.toMatch(/aria-label/);
   });
+
+  test('does NOT wrap its labeled trigger in a redundant Tooltip (visible "Open with AI" text is the affordance)', () => {
+    expect(SRC).not.toContain("from '@/components/ui/tooltip'");
+    expect(SRC).not.toContain('<TooltipContent>');
+    expect(SRC).toContain('<Trans>Open with AI</Trans>');
+  });
 });
