@@ -2,7 +2,7 @@
 #
 # Run `lingui extract` (the canonical extractor wired via `bun run i18n` in
 # packages/app) and fail if the committed catalogs at
-# packages/app/src/locales/{en,pseudo}/messages.{po,ts} do not match what the
+# packages/app/src/locales/{en,pseudo}/messages.{po,json} do not match what the
 # extractor would produce against the current `<Trans>` / t`...` macros under
 # packages/app/src. Mirrors check-instructions-drift.sh /
 # check-schema-snapshot-clean.sh so `bun run check` catches drift before push.
@@ -11,10 +11,10 @@
 # Regenerate after adding strings:
 #   cd packages/app && bun run i18n
 #
-# Lingui's CLI has no `--check` mode, so we run the real extract+compile and
-# compare against the working tree via `git diff --quiet`. The catalog files
-# are content-stable for unchanged source, so a clean tree before this script
-# stays clean after a no-drift run.
+# Lingui's CLI has no `--check` mode, so we run the real extract+compile+format
+# path and compare against the working tree via `git diff --quiet`. The catalog
+# files are content-stable for unchanged source, so a clean tree before this
+# script stays clean after a no-drift run.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

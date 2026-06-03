@@ -176,8 +176,7 @@
       "!**/tests/perf/results",
       "!**/tests/perf/playwright-results",
       "!packages/desktop/out",
-      "!packages/desktop/dist-desktop",
-      "!packages/app/src/locales/**/messages.ts"
+      "!packages/desktop/dist-desktop"
     ]
   }
 }

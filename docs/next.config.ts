@@ -4,8 +4,12 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   reactCompiler: {
+    // Fail the build on any compiler diagnostic
     panicThreshold: 'all_errors',
   },
+  // Redirects for deleted docs pages — the prior `Install` and `CLI` pages
+  // were folded into Quickstart and Configuration respectively when the docs
+  // pivoted to a desktop-app-first story.
   async redirects() {
     return [
       {
