@@ -75,6 +75,7 @@ describe('upload extension sets', () => {
 });
 
 describe('mediaKindForSidebarAssetExtension', () => {
+
   test.each([
     ['png', 'image'],
     ['jpg', 'image'],
