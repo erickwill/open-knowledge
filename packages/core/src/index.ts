@@ -370,6 +370,7 @@ export {
 } from './markdown/safe-url.ts';
 export {
   createTagInTextRegex,
+  INLINE_TAG_VALUE_RE,
   TAG_IN_TEXT_PATTERN_SOURCE,
 } from './markdown/tag-promotion.ts';
 export {

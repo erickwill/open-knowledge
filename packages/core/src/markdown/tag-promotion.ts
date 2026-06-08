@@ -7,6 +7,8 @@ export function createTagInTextRegex(): RegExp {
 }
 const TAG_IN_TEXT_RE = createTagInTextRegex();
 
+export const INLINE_TAG_VALUE_RE = /^[a-zA-Z][\w/-]*$/;
+
 function isEscapedHash(source: string, sourceOffsetOfHash: number): boolean {
   if (sourceOffsetOfHash <= 0) return false;
   if (source[sourceOffsetOfHash - 1] !== '\\') return false;

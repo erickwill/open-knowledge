@@ -37,14 +37,14 @@ describe('TagPillInput — render-side invalid pill flagging', () => {
       value: ['showcase', '2026', 'has spaces', 'proj/team'],
     });
     const invalid = container.querySelectorAll('[data-tag-invalid="true"]');
-    expect(invalid).toHaveLength(2);
+    expect(invalid).toHaveLength(1);
     const texts = Array.from(invalid).map((el) => el.textContent ?? '');
-    expect(texts.some((t) => t.includes('2026'))).toBe(true);
+    expect(texts.some((t) => t.includes('2026'))).toBe(false);
     expect(texts.some((t) => t.includes('has spaces'))).toBe(true);
   });
 
   test('invalid pill is wrapped in a Radix Tooltip trigger (content lazy-renders)', () => {
-    const { container } = renderInput({ value: ['2026'] });
+    const { container } = renderInput({ value: ['bad!'] });
     const invalidBadge = container.querySelector('[data-tag-invalid="true"]');
     expect(invalidBadge?.getAttribute('data-slot')).toBe('tooltip-trigger');
   });
@@ -65,10 +65,10 @@ describe('TagPillInput — input-side grammar gate', () => {
     const onChange = mock(() => {});
     const { container } = renderInput({ onChange });
     const input = container.querySelector('input') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: '2026' } });
+    fireEvent.change(input, { target: { value: 'bad!' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(onChange).toHaveBeenCalledTimes(0);
-    expect(input.value).toBe('2026');
+    expect(input.value).toBe('bad!');
     expect(input.getAttribute('data-tag-invalid')).toBe('true');
     expect(input.getAttribute('aria-invalid')).toBe('true');
     const alert = container.querySelector('[data-testid="tag-pill-input-error"]');
@@ -89,13 +89,25 @@ describe('TagPillInput — input-side grammar gate', () => {
     expect(input.getAttribute('aria-invalid')).toBeNull();
   });
 
-  test('typing clears rejection state for the next commit attempt', () => {
-    const { container } = renderInput();
+  test('Enter on a digit-leading tag like a year (2026) commits', () => {
+    const onChange = mock(() => {});
+    const { container } = renderInput({ onChange });
     const input = container.querySelector('input') as HTMLInputElement;
     fireEvent.change(input, { target: { value: '2026' } });
     fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toEqual(['2026']);
+    expect(input.value).toBe('');
+    expect(input.getAttribute('aria-invalid')).toBeNull();
+  });
+
+  test('typing clears rejection state for the next commit attempt', () => {
+    const { container } = renderInput();
+    const input = container.querySelector('input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'bad!' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
     expect(input.getAttribute('aria-invalid')).toBe('true');
-    fireEvent.change(input, { target: { value: '2026r' } });
+    fireEvent.change(input, { target: { value: 'bad!x' } });
     expect(input.getAttribute('aria-invalid')).toBeNull();
   });
 
@@ -103,7 +115,7 @@ describe('TagPillInput — input-side grammar gate', () => {
     const onChange = mock(() => {});
     const { container } = renderInput({ onChange });
     const input = container.querySelector('input') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: '2026' } });
+    fireEvent.change(input, { target: { value: 'bad!' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(input.getAttribute('aria-invalid')).toBe('true');
     fireEvent.keyDown(input, { key: 'Escape' });
@@ -154,7 +166,7 @@ describe('TagPillInput — a11y id wiring (regression: PR #1288 review findings)
   test('grammar-hint id is derived from the caller-supplied `id` prop (per-instance unique)', () => {
     const { container } = renderInput({ id: 'my-tags-field' });
     const input = container.querySelector('input') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: '2026' } });
+    fireEvent.change(input, { target: { value: 'bad!' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     const alert = container.querySelector('[data-testid="tag-pill-input-error"]');
     expect(alert?.id).toBe('my-tags-field-grammar-hint');
@@ -168,7 +180,7 @@ describe('TagPillInput — a11y id wiring (regression: PR #1288 review findings)
       </TooltipProvider>,
     );
     const [leftInput, rightInput] = container.querySelectorAll('input');
-    fireEvent.change(leftInput as HTMLInputElement, { target: { value: '2026' } });
+    fireEvent.change(leftInput as HTMLInputElement, { target: { value: 'bad!' } });
     fireEvent.keyDown(leftInput as HTMLInputElement, { key: 'Enter' });
     fireEvent.change(rightInput as HTMLInputElement, { target: { value: 'has spaces' } });
     fireEvent.keyDown(rightInput as HTMLInputElement, { key: 'Enter' });
@@ -184,7 +196,7 @@ describe('TagPillInput — a11y id wiring (regression: PR #1288 review findings)
       'aria-describedby': 'my-field-rhf-error',
     });
     const input = container.querySelector('input') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: '2026' } });
+    fireEvent.change(input, { target: { value: 'bad!' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     const describedby = input.getAttribute('aria-describedby') ?? '';
     const ids = describedby.split(/\s+/).filter(Boolean);

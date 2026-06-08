@@ -7,18 +7,20 @@ import {
 } from './tags.ts';
 
 describe('FRONTMATTER_TAG_VALUE_RE', () => {
-  test('accepts shapes the inline promoter accepts', () => {
+  test('accepts letter- and digit-leading shapes', () => {
     expect(FRONTMATTER_TAG_VALUE_RE.test('typescript')).toBe(true);
     expect(FRONTMATTER_TAG_VALUE_RE.test('proj/team/2026')).toBe(true);
     expect(FRONTMATTER_TAG_VALUE_RE.test('a-b_c')).toBe(true);
     expect(FRONTMATTER_TAG_VALUE_RE.test('a1')).toBe(true);
+    expect(FRONTMATTER_TAG_VALUE_RE.test('2026')).toBe(true);
+    expect(FRONTMATTER_TAG_VALUE_RE.test('123')).toBe(true);
   });
 
-  test('rejects digit-leading, empty, and whitespace shapes', () => {
-    expect(FRONTMATTER_TAG_VALUE_RE.test('123')).toBe(false);
+  test('rejects empty, whitespace, and punctuation-leading shapes', () => {
     expect(FRONTMATTER_TAG_VALUE_RE.test('')).toBe(false);
     expect(FRONTMATTER_TAG_VALUE_RE.test('foo bar')).toBe(false);
     expect(FRONTMATTER_TAG_VALUE_RE.test('-leading-dash')).toBe(false);
+    expect(FRONTMATTER_TAG_VALUE_RE.test('/leading-slash')).toBe(false);
   });
 });
 
@@ -55,8 +57,8 @@ describe('extractFrontmatterTags', () => {
     const warn = spyOn(console, 'warn').mockImplementation(mock(() => {}));
     try {
       const out = extractFrontmatterTags('tags: [valid, "with space", "123digit", another]\n');
-      expect(out).toEqual(['valid', 'another']);
-      expect(warn).toHaveBeenCalledTimes(2);
+      expect(out).toEqual(['valid', '123digit', 'another']);
+      expect(warn).toHaveBeenCalledTimes(1);
     } finally {
       warn.mockRestore();
     }
@@ -65,6 +67,7 @@ describe('extractFrontmatterTags', () => {
   test('coerces non-string scalars and applies the per-entry tag regex', () => {
     expect(extractFrontmatterTags('tags: [valid, 42, true, also]\n')).toEqual([
       'valid',
+      '42',
       'true',
       'also',
     ]);
@@ -96,10 +99,10 @@ describe('isValidFrontmatterTagValue', () => {
     }
   });
 
-  test('rejects leading-digit values (year-only tags fail)', () => {
-    expect(isValidFrontmatterTagValue('2026')).toBe(false);
-    expect(isValidFrontmatterTagValue('42')).toBe(false);
-    expect(isValidFrontmatterTagValue('1q-recap')).toBe(false);
+  test('accepts leading-digit values (year-only tags like 2026)', () => {
+    expect(isValidFrontmatterTagValue('2026')).toBe(true);
+    expect(isValidFrontmatterTagValue('42')).toBe(true);
+    expect(isValidFrontmatterTagValue('1q-recap')).toBe(true);
   });
 
   test('rejects whitespace-containing values', () => {

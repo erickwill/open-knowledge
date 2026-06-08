@@ -1,6 +1,6 @@
 import { parseFrontmatterYaml } from './yaml-codec.ts';
 
-export const FRONTMATTER_TAG_VALUE_RE = /^[a-zA-Z][\w/-]*$/;
+export const FRONTMATTER_TAG_VALUE_RE = /^[a-zA-Z0-9][\w/-]*$/;
 
 export function isValidFrontmatterTagValue(value: string): boolean {
   if (typeof value !== 'string') return false;
@@ -9,7 +9,7 @@ export function isValidFrontmatterTagValue(value: string): boolean {
 }
 
 export const FRONTMATTER_TAG_GRAMMAR_HINT =
-  'Tags must start with a letter and contain only letters, digits, underscores, dashes, and slashes.';
+  'Tags must start with a letter or digit and contain only letters, digits, underscores, dashes, and slashes.';
 
 function stripLeadingHash(value: string): string {
   return value.startsWith('#') ? value.slice(1) : value;
