@@ -172,8 +172,7 @@ function parseGitHubShareUrl(input: string): ParsedGitHubShareTarget | null {
   return null;
 }
 
-export const SPLASH_DOWNLOAD_URL =
-  'https://github.com/inkeep/open-knowledge/releases/latest/download/Open-Knowledge-arm64.dmg';
+export { DOWNLOAD_URL as SPLASH_DOWNLOAD_URL } from './site';
 
 export function buildCustomSchemeUrl(sharedUrl: string): string {
   return `openknowledge://share?url=${encodeURIComponent(sharedUrl)}`;
