@@ -70,7 +70,7 @@ const config: InkeepModalSearchAndChatProps = {
         icon: { builtIn: 'FaGithub' },
         action: {
           type: 'open_link',
-          url: 'https://github.com/inkeep/open-knowledge-legacy',
+          url: 'https://github.com/inkeep/open-knowledge',
         },
       },
     ],

@@ -5251,6 +5251,11 @@ Homepage: https://github.com/sindresorhus/tagged-tag
 
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (https://sindresorhus.com)
 
+### `tailwind-merge@3.6.0`
+Homepage: https://github.com/dcastil/tailwind-merge
+
+Copyright (c) 2021 Dany Castillo
+
 ### `tailwind-merge@3.5.0`
 Homepage: https://github.com/dcastil/tailwind-merge
 
