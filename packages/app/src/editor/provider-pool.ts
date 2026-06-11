@@ -16,6 +16,8 @@ import {
   computeUnsyncedUpdate,
   createClientPersistence,
   mergeStateVectors,
+  type PeekStoredLineageEpochArgs,
+  peekStoredLineageEpoch,
   UNKNOWN_BRANCH_SENTINEL,
 } from './client-persistence';
 import { appendTraceContextToCollabUrl } from './collab-otel';
@@ -67,6 +69,7 @@ interface ActivePoolEntry extends PoolEntryBase {
   observerCleanup: (() => void) | null;
   observerFireCounterCleanup: (() => void) | null;
   pendingRecycleTimer: ReturnType<typeof setTimeout> | null;
+  persistenceAttachOwned: boolean;
   serverDrivenCloseReauthInFlight: boolean;
 }
 
@@ -129,6 +132,8 @@ type ClientPersistenceFactory = (args: {
   doc: Y.Doc;
 }) => ClientPersistenceProvider;
 
+type PeekStoredLineageEpoch = (args: PeekStoredLineageEpochArgs) => Promise<string | null>;
+
 class ClientPersistenceClearTimeoutError extends Error {
   constructor(
     readonly docName: string,
@@ -136,6 +141,16 @@ class ClientPersistenceClearTimeoutError extends Error {
   ) {
     super(`client persistence clearData timed out for ${docName} after ${timeoutMs}ms`);
     this.name = 'ClientPersistenceClearTimeoutError';
+  }
+}
+
+class StoredEpochPeekTimeoutError extends Error {
+  constructor(
+    readonly docName: string,
+    readonly timeoutMs: number,
+  ) {
+    super(`stored-state epoch peek timed out for ${docName} after ${timeoutMs}ms`);
+    this.name = 'StoredEpochPeekTimeoutError';
   }
 }
 
@@ -237,6 +252,7 @@ export class ProviderPool {
   private readonly pendingClears = new Map<string, Promise<void>>();
   private readonly clearFailures = new Set<string>();
   private readonly persistenceFactory: ClientPersistenceFactory;
+  private readonly peekStoredEpoch: PeekStoredLineageEpoch;
 
   private readonly storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null;
 
@@ -248,6 +264,7 @@ export class ProviderPool {
       clearDataTimeoutMs?: number;
       storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null;
       persistenceFactory?: ClientPersistenceFactory;
+      peekStoredLineageEpoch?: PeekStoredLineageEpoch;
     },
   ) {
     this.maxSize = maxSize;
@@ -255,6 +272,7 @@ export class ProviderPool {
     this.recycleDebounceMs = options?.recycleDebounceMs ?? RECYCLE_DEBOUNCE_MS;
     this.clearDataTimeoutMs = options?.clearDataTimeoutMs ?? CLEAR_DATA_TIMEOUT_MS;
     this.persistenceFactory = options?.persistenceFactory ?? createClientPersistence;
+    this.peekStoredEpoch = options?.peekStoredLineageEpoch ?? peekStoredLineageEpoch;
     if (options?.storage !== undefined) {
       this.storage = options.storage;
     } else {
@@ -306,8 +324,138 @@ export class ProviderPool {
     });
   }
 
+  private async validateStoredStateThenAttach(
+    entry: ActivePoolEntry,
+    serverInstanceId: string,
+  ): Promise<void> {
+    if (entry.persistenceAttachOwned) return;
+    entry.persistenceAttachOwned = true;
+    const docName = entry.docName;
+    const entryIsCurrent = (): boolean =>
+      this._entries.get(docName) === entry &&
+      entry.kind === 'active' &&
+      entry.persistence === null &&
+      !this.pendingClears.has(docName);
+    if (!entryIsCurrent()) return;
+    let storedEpoch: string | null;
+    try {
+      storedEpoch = await new Promise<string | null>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          reject(new StoredEpochPeekTimeoutError(docName, this.clearDataTimeoutMs));
+        }, this.clearDataTimeoutMs);
+        this.peekStoredEpoch({
+          branch: this.normalizedObservedBranch(),
+          serverInstanceId,
+          docName,
+        }).then(
+          (value) => {
+            clearTimeout(timer);
+            resolve(value);
+          },
+          (err: unknown) => {
+            clearTimeout(timer);
+            reject(err);
+          },
+        );
+      });
+    } catch (err: unknown) {
+      this.emitStructuredClientRecoveryEvent({
+        event: 'ok-client-persistence-attach-failed',
+        ...this.recoveryTelemetryBase(docName),
+        phase: 'peek',
+        errorName: err instanceof Error ? err.name : 'non-error-throw',
+        errorMessage: err instanceof Error ? err.message : String(err),
+      });
+      return;
+    }
+    if (!entryIsCurrent()) return;
+    if (storedEpoch === null) {
+      this.attachValidatedPersistence(entry, serverInstanceId);
+      return;
+    }
+    if (!entry.hasSynced) {
+      await this.awaitFirstSyncOrDestroy(entry);
+      if (!entryIsCurrent() || !entry.hasSynced) return;
+    }
+    const liveEpochRaw = entry.provider.document.getMap('lifecycle').get(LINEAGE_EPOCH_KEY);
+    const liveEpoch =
+      typeof liveEpochRaw === 'string' && liveEpochRaw.length > 0 ? liveEpochRaw : null;
+    if (liveEpoch === storedEpoch) {
+      this.attachValidatedPersistence(entry, serverInstanceId);
+      return;
+    }
+    this.emitStructuredClientRecoveryEvent({
+      event: 'ok-doc-lineage-mismatch',
+      ...this.recoveryTelemetryBase(docName),
+      via: 'stored-state-validation',
+      staleEpoch: storedEpoch,
+      liveEpoch: liveEpoch ?? '<absent>',
+    });
+    const wasActive = this.activeDocName === docName;
+    void this.runCloseAndClearPersistence(docName);
+    const reopened = this.open(docName);
+    if (reopened !== null && wasActive) this.setActive(docName);
+  }
+
+  private attachValidatedPersistence(entry: ActivePoolEntry, serverInstanceId: string): void {
+    const docName = entry.docName;
+    try {
+      const persistence = this.buildPersistence(serverInstanceId, docName, entry.provider.document);
+      entry.persistence = persistence;
+      this.notify();
+      void this.backfillCacheAfterFirstSync(entry, persistence).catch((err: unknown) => {
+        this.emitStructuredClientRecoveryEvent({
+          event: 'ok-client-persistence-attach-failed',
+          ...this.recoveryTelemetryBase(docName),
+          phase: 'backfill',
+          errorName: err instanceof Error ? err.name : 'non-error-throw',
+          errorMessage: err instanceof Error ? err.message : String(err),
+        });
+      });
+    } catch (err: unknown) {
+      this.emitStructuredClientRecoveryEvent({
+        event: 'ok-client-persistence-attach-failed',
+        ...this.recoveryTelemetryBase(docName),
+        phase: 'attach',
+        errorName: err instanceof Error ? err.name : 'non-error-throw',
+        errorMessage: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  private async backfillCacheAfterFirstSync(
+    entry: ActivePoolEntry,
+    persistence: ClientPersistenceProvider,
+  ): Promise<void> {
+    await persistence.whenSynced;
+    if (!entry.hasSynced) {
+      await this.awaitFirstSyncOrDestroy(entry);
+    }
+    if (
+      this._entries.get(entry.docName) !== entry ||
+      entry.kind !== 'active' ||
+      entry.persistence !== persistence ||
+      !entry.hasSynced
+    ) {
+      return;
+    }
+    await persistence.flushFullState();
+  }
+
+  private async awaitFirstSyncOrDestroy(entry: ActivePoolEntry): Promise<void> {
+    if (entry.hasSynced) return;
+    await new Promise<void>((resolve) => {
+      const settle = (): void => {
+        entry.provider.off('synced', settle);
+        entry.provider.off('destroy', settle);
+        resolve();
+      };
+      entry.provider.on('synced', settle);
+      entry.provider.on('destroy', settle);
+    });
+  }
+
   private attachDeferredPersistence(serverInstanceId: string): void {
-    let anyAttached = false;
     for (const entry of Array.from(this._entries.values())) {
       if (entry.kind !== 'active') continue;
       if (entry.persistence !== null) continue;
@@ -334,25 +482,7 @@ export class ProviderPool {
           continue;
         }
       }
-      try {
-        entry.persistence = this.buildPersistence(
-          serverInstanceId,
-          entry.docName,
-          entry.provider.document,
-        );
-        anyAttached = true;
-      } catch (err: unknown) {
-        const errorName = err instanceof Error ? err.name : 'non-error-throw';
-        this.emitStructuredClientRecoveryEvent({
-          event: 'ok-client-persistence-attach-failed',
-          ...this.recoveryTelemetryBase(entry.docName),
-          errorName,
-          errorMessage: err instanceof Error ? err.message : String(err),
-        });
-      }
-    }
-    if (anyAttached) {
-      this.notify();
+      void this.validateStoredStateThenAttach(entry, serverInstanceId);
     }
   }
 
@@ -725,7 +855,8 @@ export class ProviderPool {
     const persistence: ClientPersistenceProvider | null =
       persistenceServerInstanceId !== null &&
       persistenceServerInstanceId.length > 0 &&
-      pendingClearForDocName === undefined
+      pendingClearForDocName === undefined &&
+      lineageEpochRecordAtOpen !== null
         ? this.buildPersistence(persistenceServerInstanceId, docName, provider.document)
         : null;
     if (import.meta.env.PROD !== true) {
@@ -746,7 +877,15 @@ export class ProviderPool {
       } else {
         mark(
           'ok/pool/idb-bypass-no-epoch',
-          { docName },
+          {
+            docName,
+            reason:
+              persistenceServerInstanceId === null || persistenceServerInstanceId.length === 0
+                ? 'no-epoch'
+                : pendingClearForDocName !== undefined
+                  ? 'pending-clear'
+                  : 'stored-state-validation',
+          },
           { startTime: idbAttachStart, duration: 0 },
         );
       }
@@ -769,6 +908,7 @@ export class ProviderPool {
       pendingRecycleTimer: null,
       bridgeSetupFailed: false,
       serverDrivenCloseReauthInFlight: false,
+      persistenceAttachOwned: false,
       lineageEpochRecordAtOpen,
     };
     mark('ok/pool/open', { docName, hit: false, poolEventId });
@@ -981,6 +1121,15 @@ export class ProviderPool {
     this.notify();
 
     if (
+      persistence === null &&
+      persistenceServerInstanceId !== null &&
+      persistenceServerInstanceId.length > 0 &&
+      pendingClearForDocName === undefined
+    ) {
+      void this.validateStoredStateThenAttach(entry, persistenceServerInstanceId);
+    }
+
+    if (
       pendingClearForDocName !== undefined &&
       persistenceServerInstanceId !== null &&
       persistenceServerInstanceId.length > 0
@@ -1025,22 +1174,7 @@ export class ProviderPool {
     if (current !== entry || current.kind !== 'active' || current.persistence !== null) {
       return;
     }
-    try {
-      current.persistence = this.buildPersistence(
-        serverInstanceId,
-        entry.docName,
-        current.provider.document,
-      );
-      this.notify();
-    } catch (err: unknown) {
-      const errorName = err instanceof Error ? err.name : 'non-error-throw';
-      this.emitStructuredClientRecoveryEvent({
-        event: 'ok-client-persistence-attach-failed',
-        ...this.recoveryTelemetryBase(entry.docName),
-        errorName,
-        errorMessage: err instanceof Error ? err.message : String(err),
-      });
-    }
+    void this.validateStoredStateThenAttach(current, serverInstanceId);
   }
 
   private handleServerInstanceMismatch(staleClaimedServerInstanceId: string): void {
