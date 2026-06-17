@@ -129,6 +129,50 @@ describe('ContentFilter', () => {
     });
   });
 
+  describe('nested ignore depth semantics', () => {
+    test('non-anchored nested pattern matches at any depth below its directory', () => {
+      mkdirSync(join(projectDir, 'agents', 'agents-api', '.blob-storage'), { recursive: true });
+      writeFileSync(join(projectDir, 'agents', '.gitignore'), '.blob-storage/\n');
+
+      const filter = createContentFilter({ projectDir, contentDir: projectDir });
+
+      expect(filter.isExcluded('agents/agents-api/.blob-storage/doc.md')).toBe(true);
+      expect(filter.isDirExcluded('agents/agents-api/.blob-storage')).toBe(true);
+      expect(filter.isDirExcluded('agents/.blob-storage')).toBe(true);
+      expect(filter.isDirExcluded('other/.blob-storage')).toBe(false);
+    });
+
+    test('async factory: non-anchored nested pattern matches at any depth', async () => {
+      mkdirSync(join(projectDir, 'agents', 'agents-api', '.blob-storage'), { recursive: true });
+      writeFileSync(join(projectDir, 'agents', '.gitignore'), '.blob-storage/\n');
+
+      const filter = await createContentFilterAsync({ projectDir, contentDir: projectDir });
+
+      expect(filter.isExcluded('agents/agents-api/.blob-storage/doc.md')).toBe(true);
+      expect(filter.isDirExcluded('agents/agents-api/.blob-storage')).toBe(true);
+    });
+
+    test('anchored nested pattern stays scoped to its own level (no over-match)', () => {
+      mkdirSync(join(projectDir, 'pkg', 'src', 'generated'), { recursive: true });
+      writeFileSync(join(projectDir, 'pkg', '.gitignore'), 'src/generated/\n');
+
+      const filter = createContentFilter({ projectDir, contentDir: projectDir });
+
+      expect(filter.isExcluded('pkg/src/generated/api.md')).toBe(true);
+      expect(filter.isExcluded('pkg/nested/src/generated/api.md')).toBe(false);
+    });
+
+    test('non-anchored nested negation un-ignores at any depth', () => {
+      mkdirSync(join(projectDir, 'logs', 'sub'), { recursive: true });
+      writeFileSync(join(projectDir, 'logs', '.gitignore'), '*.md\n!keep.md\n');
+
+      const filter = createContentFilter({ projectDir, contentDir: projectDir });
+
+      expect(filter.isExcluded('logs/debug.md')).toBe(true);
+      expect(filter.isExcluded('logs/sub/keep.md')).toBe(false);
+    });
+  });
+
   describe('non-git graceful degradation', () => {
     test('works with no .gitignore and no .okignore', () => {
       const filter = createContentFilter({ projectDir, contentDir: projectDir });
