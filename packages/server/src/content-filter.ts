@@ -585,8 +585,13 @@ function parseIgnorePatterns(content: string): string[] {
 }
 
 function prefixPattern(pattern: string, relPrefix: string): string {
-  if (pattern.startsWith('!')) return `!${relPrefix}/${pattern.slice(1)}`;
-  return `${relPrefix}/${pattern}`;
+  const negated = pattern.startsWith('!');
+  const body = negated ? pattern.slice(1) : pattern;
+  const core = body.startsWith('/') ? body.slice(1) : body;
+  const withoutTrailingSlash = core.endsWith('/') ? core.slice(0, -1) : core;
+  const anchored = body.startsWith('/') || withoutTrailingSlash.includes('/');
+  const reanchored = anchored ? `${relPrefix}/${core}` : `${relPrefix}/**/${core}`;
+  return negated ? `!${reanchored}` : reanchored;
 }
 
 function loadNestedIgnoreFiles(
