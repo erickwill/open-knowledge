@@ -28,17 +28,17 @@ const navLinks: NavLink[] = [
     icon: GitHubIcon,
   },
   {
-    href: 'https://discord.com/invite/YujKpFN49',
-    label: 'Discord',
-    external: true,
-    icon: DiscordIcon,
-    iconOnly: true,
-  },
-  {
     href: 'https://x.com/OpenKnowledgeAI',
     label: 'X',
     external: true,
     icon: XIcon,
+    iconOnly: true,
+  },
+  {
+    href: 'https://discord.com/invite/YujKpFN49',
+    label: 'Discord',
+    external: true,
+    icon: DiscordIcon,
     iconOnly: true,
   },
 ];
