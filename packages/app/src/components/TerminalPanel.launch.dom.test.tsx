@@ -33,6 +33,7 @@ class MockTerminal {
     this.onDataCb = cb;
     return { dispose() {} };
   });
+  onTitleChange = mock((_cb: (title: string) => void) => ({ dispose() {} }));
   attachCustomKeyEventHandler = mock((h: (e: KeyboardEvent) => boolean) => {
     this.keyHandler = h;
   });
