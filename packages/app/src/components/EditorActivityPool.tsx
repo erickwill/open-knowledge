@@ -401,7 +401,7 @@ function ScrollPreservingContainer({
     <div
       ref={ref}
       data-testid="editor-scroll-container"
-      className="subtle-scrollbar h-full overflow-y-auto pt-14 scroll-pt-14"
+      className="editor-doc-scroll subtle-scrollbar h-full overflow-y-auto pt-14 scroll-pt-14"
       style={{ overflowAnchor: 'auto' }}
     >
       {children}
@@ -554,6 +554,7 @@ function ActivityEntry({
 
   const [warmSnapshot] = useState(() => peekRenameSnapshot(entry.docName));
   const warmHtml = warmSnapshot?.html ?? null;
+
 
   const [hasEmittedFirstToggle, setHasEmittedFirstToggle] = useState(false);
   useEffect(() => {

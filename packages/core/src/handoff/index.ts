@@ -1,8 +1,14 @@
+
 export { buildClaudeUrl } from './claude-url.ts';
 export { buildCodexUrl } from './codex-url.ts';
 export { buildCursorUrl } from './cursor-url.ts';
 export {
+  type AssembleHandoffPromptInput,
+  assembleHandoffPrompt,
+  type ComposeSelection,
   type CreateScenario,
+  composeAskProjectPrompt,
+  composeAskPrompt,
   composeCreatePrompt,
   composeEmptySpacePrompt,
   composeFilePrompt,
