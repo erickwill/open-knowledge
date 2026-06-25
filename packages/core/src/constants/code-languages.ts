@@ -38,6 +38,7 @@ export const CODE_FILE_EXTENSIONS_TO_LANGUAGE: Readonly<Record<string, string>> 
   mjs: 'javascript',
   cjs: 'javascript',
 
+  json: 'json',
   jsonc: 'json',
 
   kt: 'kotlin',

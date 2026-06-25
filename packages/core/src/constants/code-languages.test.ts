@@ -22,6 +22,7 @@ describe('codeLanguageForExtension', () => {
     expect(codeLanguageForExtension('hpp')).toBe('cpp');
     expect(codeLanguageForExtension('yaml')).toBe('yaml');
     expect(codeLanguageForExtension('xml')).toBe('xml');
+    expect(codeLanguageForExtension('json')).toBe('json');
     expect(codeLanguageForExtension('html')).toBeNull();
     expect(codeLanguageForExtension('htm')).toBeNull();
     expect(codeLanguageForExtension('svg')).toBeNull();
@@ -59,6 +60,11 @@ describe('codeLanguageForExtension', () => {
     const bashAliases = ['sh', 'zsh', 'bash'];
     for (const alias of bashAliases) {
       expect(codeLanguageForExtension(alias)).toBe('bash');
+    }
+
+    const jsonAliases = ['json', 'jsonc'];
+    for (const alias of jsonAliases) {
+      expect(codeLanguageForExtension(alias)).toBe('json');
     }
   });
 });
