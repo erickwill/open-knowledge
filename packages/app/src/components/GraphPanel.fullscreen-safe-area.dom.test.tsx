@@ -1,4 +1,4 @@
-import { afterEach, describe, mock, test } from 'bun:test';
+import { afterEach, describe, expect, mock, test } from 'bun:test';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
@@ -44,8 +44,17 @@ mock.module('@/components/GraphView', () => ({
   ),
 }));
 
+function setElectronHost(on: boolean) {
+  const w = window as unknown as { okDesktop?: unknown };
+  if (on) w.okDesktop = {};
+  else delete w.okDesktop;
+}
+
 describe('GraphPanel fullscreen safe-area behavior', () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    setElectronHost(false);
+  });
 
   async function renderExpandedGraphPanel() {
     const { GraphPanel } = await import('./GraphPanel');
@@ -70,16 +79,43 @@ describe('GraphPanel fullscreen safe-area behavior', () => {
       'overflow-hidden',
       'bg-background',
     ]);
+    expectVisualClassTokensAbsent(panel?.className, ['[-webkit-app-region:no-drag]']);
 
     const header = panel?.querySelector('[data-slot="panel-header"]');
+    expectVisualClassTokens(header?.className, ['mt-2', 'h-12', 'py-0']);
+
     expectVisualClassTokens(header?.className, ['pl-[var(--ok-titlebar-reserve-left,1rem)]']);
     expectVisualClassTokensAbsent(header?.className, ['pl-[var(--ok-titlebar-reserve-left)]']);
 
     const titleCluster = header?.querySelector('[data-slot="graph-title-cluster"]');
-    expectVisualClassTokens(titleCluster?.className, ['ml-2']);
+    expectVisualClassTokens(titleCluster?.className, ['ml-4']);
   });
 
-  test('docked (non-expanded) graph does not indent the title cluster', async () => {
+  test('fullscreen on Electron scopes window-drag to the header, controls opt out', async () => {
+    setElectronHost(true);
+    await renderExpandedGraphPanel();
+
+    const panel = screen.getByTestId('graph-view').closest('[data-slot="panel"]');
+    const header = panel?.querySelector('[data-slot="panel-header"]');
+    expectVisualClassTokens(header?.className, ['[-webkit-app-region:drag]']);
+    expect(header?.getAttribute('data-electron-drag')).toBe('');
+
+    const controls = header?.querySelector('[data-slot="graph-controls"]');
+    expectVisualClassTokens(controls?.className, ['[&>*]:[-webkit-app-region:no-drag]']);
+  });
+
+  test('fullscreen off Electron declares no drag region', async () => {
+    await renderExpandedGraphPanel();
+
+    const header = screen
+      .getByTestId('graph-view')
+      .closest('[data-slot="panel"]')
+      ?.querySelector('[data-slot="panel-header"]');
+    expectVisualClassTokensAbsent(header?.className, ['[-webkit-app-region:drag]']);
+    expect(header?.getAttribute('data-electron-drag')).toBeNull();
+  });
+
+  test('docked (non-expanded) graph does not reserve the traffic-light footprint', async () => {
     const { GraphPanel } = await import('./GraphPanel');
     render(
       <TooltipProvider>
@@ -87,10 +123,14 @@ describe('GraphPanel fullscreen safe-area behavior', () => {
       </TooltipProvider>,
     );
 
-    const titleCluster = screen
-      .getByTestId('graph-view')
-      .closest('[data-slot="panel"]')
-      ?.querySelector('[data-slot="graph-title-cluster"]');
-    expectVisualClassTokensAbsent(titleCluster?.className, ['ml-2']);
+    const panel = screen.getByTestId('graph-view').closest('[data-slot="panel"]');
+    const header = panel?.querySelector('[data-slot="panel-header"]');
+    expectVisualClassTokensAbsent(header?.className, [
+      'pl-[var(--ok-titlebar-reserve-left,1rem)]',
+      'mt-2',
+      'h-12',
+    ]);
+    const titleCluster = header?.querySelector('[data-slot="graph-title-cluster"]');
+    expectVisualClassTokensAbsent(titleCluster?.className, ['ml-4']);
   });
 });
