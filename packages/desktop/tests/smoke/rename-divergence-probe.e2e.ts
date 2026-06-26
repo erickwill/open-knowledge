@@ -74,7 +74,9 @@ async function runProbe(
     }).toPass({ timeout: 30_000 });
     if (!page) throw new Error('editor page not found');
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('.ProseMirror')).toContainText(marker, { timeout: 30_000 });
+    await expect(
+      page.locator('.ProseMirror[contenteditable="true"]:not(.composer-prosemirror)'),
+    ).toContainText(marker, { timeout: 30_000 });
 
     let port = 0;
     const userDataBasename = userDataDir.split('/').pop() ?? userDataDir;

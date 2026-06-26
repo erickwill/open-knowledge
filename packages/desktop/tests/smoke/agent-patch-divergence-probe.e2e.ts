@@ -93,16 +93,22 @@ async function executeRace(opts: {
     throw new Error(`Seed write failed: ${seedRes.status} ${await seedRes.text()}`);
   }
 
-  await expect(page.locator('.ProseMirror')).toContainText('BANANA is here', {
+  await expect(
+    page.locator('.ProseMirror[contenteditable="true"]:not(.composer-prosemirror)'),
+  ).toContainText('BANANA is here', {
     timeout: 10_000,
   });
   await wait(150);
 
   let targetPara: import('@playwright/test').Locator;
   if (variant === 'diff-para') {
-    targetPara = page.locator('.ProseMirror p').filter({ hasText: 'Second paragraph' });
+    targetPara = page
+      .locator('.ProseMirror[contenteditable="true"]:not(.composer-prosemirror) p')
+      .filter({ hasText: 'Second paragraph' });
   } else {
-    targetPara = page.locator('.ProseMirror p').filter({ hasText: 'BANANA' });
+    targetPara = page
+      .locator('.ProseMirror[contenteditable="true"]:not(.composer-prosemirror) p')
+      .filter({ hasText: 'BANANA' });
   }
   await targetPara.click();
   await page.keyboard.press('End');
@@ -223,7 +229,9 @@ async function setupElectron(
   }).toPass({ timeout: 30_000 });
   if (!page) throw new Error('editor page not found');
   await page.waitForLoadState('domcontentloaded');
-  await expect(page.locator('.ProseMirror')).toContainText('BANANA', { timeout: 30_000 });
+  await expect(
+    page.locator('.ProseMirror[contenteditable="true"]:not(.composer-prosemirror)'),
+  ).toContainText('BANANA', { timeout: 30_000 });
 
   const { port } = await detectApiPort(userDataDir);
 

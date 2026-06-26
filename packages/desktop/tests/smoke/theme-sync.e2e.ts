@@ -268,6 +268,11 @@ test.describe('chrome-modernization theme-sync smoke', () => {
       }
     });
 
+    await editorPage.evaluate(() => {
+      window.okDesktop?.signalThemeApplied?.({ reducedTransparency: false });
+    });
+    await editorPage.waitForTimeout(600);
+
     const reducedTrueBefore = await app.evaluate(() => {
       const g = globalThis as unknown as { __okSetVibrancyCalls?: unknown[] };
       return g.__okSetVibrancyCalls?.length ?? 0;
