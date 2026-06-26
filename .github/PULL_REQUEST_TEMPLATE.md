@@ -4,17 +4,14 @@
 
 ## How this was verified
 
-<!-- What did you run or observe to confirm the change works? (test command, screenshot, manual steps) -->
+<!-- How you tested: `bun run check` output, manual steps, before/after screenshots for UI changes. -->
 
 ## Checklist
 
-- [ ] I ran the smallest relevant local check, or explained why I could not.
-- [ ] I added tests or a manual verification note for behavior changes.
-- [ ] I added a changeset for runtime behavior changes, or this PR does not need one.
-- [ ] I updated docs when behavior, commands, or contributor flow changed.
-- [ ] I updated `bun.lock` and `THIRD_PARTY_NOTICES.md` if dependencies changed.
-- [ ] I did not include secrets, credentials, customer data, local machine paths, or generated debug artifacts.
-- [ ] I have read [CONTRIBUTING.md](../CONTRIBUTING.md) and agree to license my contribution under the project's terms, including the CLA when prompted.
+- [ ] Ran `bun run check` (lint, typecheck, tests) locally
+- [ ] Added a changeset (`bun run changeset`) if this changes behavior
+- [ ] Updated docs if this changes a user-facing surface
+- [ ] I have read [CONTRIBUTING.md](../CONTRIBUTING.md) and agree to license my contribution under the project's terms (CLA)
 
 ---
 
