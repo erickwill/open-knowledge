@@ -1,12 +1,13 @@
 import { type TargetData, TERMINAL_CLI_IDS, type TerminalCli } from '@inkeep/open-knowledge-core';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { ChevronDown, Loader2, SquareTerminal, TextQuote, X } from 'lucide-react';
+import { ChevronDown, Loader2, TextQuote, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ComposerContextChips } from '@/components/ComposerContextChips';
 import { AgentSplitButton } from '@/components/handoff/AgentSplitButton';
 import { TargetIcon } from '@/components/handoff/OpenInAgentMenuItem';
 import { useTerminalLaunch } from '@/components/handoff/TerminalLaunchContext';
+import { cliIconTargetId } from '@/components/handoff/terminal-cli-display';
 import {
   buildComposerHandoffInput,
   useHandoffDispatch,
@@ -546,7 +547,7 @@ export function BottomComposer({
           primary={
             <>
               {selectedCli !== null ? (
-                <SquareTerminal className="size-4" aria-hidden />
+                <TargetIcon id={cliIconTargetId(selectedCli)} className="size-4" aria-hidden />
               ) : resolvedTarget ? (
                 <TargetIcon id={resolvedTarget.id} className="size-4" aria-hidden />
               ) : null}

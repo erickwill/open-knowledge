@@ -1,8 +1,9 @@
 import type { HandoffTarget, TargetData, TerminalCli } from '@inkeep/open-knowledge-core';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { Check, ChevronDown, SquareTerminal } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { TargetIcon } from '@/components/handoff/OpenInAgentMenuItem';
+import { cliIconTargetId } from '@/components/handoff/terminal-cli-display';
 import { Button } from '@/components/ui/button';
 import { ButtonGroup } from '@/components/ui/button-group';
 import {
@@ -134,7 +135,17 @@ export function AgentSplitButton({
                           data-testid={terminalTestId(row.cli)}
                           aria-label={row.ariaLabel}
                         >
-                          <SquareTerminal className="size-4" aria-hidden="true" />
+                          {/* Per-CLI brand icon (same source of truth the "Open
+                              with AI" surfaces use via `cliIconTargetId`), so each
+                              row is identifiable at a glance — OpenCode is
+                              terminal-only and would otherwise show no brand mark.
+                              The "Terminal" section header + the "(CLI)" label
+                              already convey that these launch a terminal. */}
+                          <TargetIcon
+                            id={cliIconTargetId(row.cli)}
+                            className="size-4"
+                            aria-hidden="true"
+                          />
                           <span className="flex-1">{row.label}</span>
                           {row.selected ? (
                             <Check aria-hidden="true" className="size-4 text-muted-foreground" />
@@ -147,7 +158,11 @@ export function AgentSplitButton({
                         data-testid={terminalTestId('claude')}
                         aria-label={t`Claude CLI`}
                       >
-                        <SquareTerminal className="size-4" aria-hidden="true" />
+                        <TargetIcon
+                          id={cliIconTargetId('claude')}
+                          className="size-4"
+                          aria-hidden="true"
+                        />
                         <span className="flex-1">
                           <Trans>Claude</Trans>
                         </span>
