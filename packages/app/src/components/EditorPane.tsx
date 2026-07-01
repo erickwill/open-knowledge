@@ -16,13 +16,13 @@ import {
   type TerminalDockPosition,
   writeTerminalDock,
 } from '@/lib/terminal-dock-store';
+import { readPreferBareTerminal } from '@/lib/terminal-new-tab-store';
 import { recordTerminalOpened } from '@/lib/terminal-telemetry';
 import { loadStickyAgent } from '@/lib/unified-agent-store';
 import { AuthModal } from './AuthModal';
 import { AutoSyncOnboardingDialog } from './AutoSyncOnboardingDialog';
 import { shouldShowAutoSyncOnboarding } from './auto-sync-onboarding-gate';
 import { type PanelTab, TABS } from './DocPanel';
-import { requestDocPanelCollapse } from './doc-panel-events';
 import { EditorArea, type TerminalPlacement } from './EditorArea';
 import { EditorHeader } from './EditorHeader';
 import { subscribeToTerminalLaunchRequests } from './handoff/terminal-launch-events';
@@ -80,14 +80,9 @@ export function EditorPane({ onOpenSearch }: EditorPaneProps = {}) {
     setTerminalLaunch({ prompt: null, cli: resolvedCli, nonce: launchNonceRef.current });
   }
 
-  function handleToggleChat() {
-    if (terminalVisible) {
-      setTerminalVisible(false);
-      return;
-    }
+  function revealTerminal() {
     setTerminalVisible(true);
-    requestDocPanelCollapse();
-    if (!hasSessions) launchNewChat();
+    if (!hasSessions && !readPreferBareTerminal()) launchNewChat();
   }
 
   const syncStatus = useGitSyncStatus();
@@ -145,7 +140,6 @@ export function EditorPane({ onOpenSearch }: EditorPaneProps = {}) {
   useEffect(() => {
     return subscribeToTerminalLaunchRequests((prompt, cli) => {
       setTerminalVisible(true);
-      requestDocPanelCollapse();
       launchNonceRef.current += 1;
       setTerminalLaunch({ prompt, cli, nonce: launchNonceRef.current });
     });
@@ -215,9 +209,6 @@ export function EditorPane({ onOpenSearch }: EditorPaneProps = {}) {
           setAuthModalOpen(true);
         }}
         onOpenSearch={onOpenSearch}
-        terminalAvailable={terminalAvailable}
-        terminalVisible={terminalVisible}
-        onToggleChat={handleToggleChat}
       />
       {/* The terminal docks to the right of the doc panel (its own column) or
           under the editor/file column. EditorArea owns the layout; the dock
@@ -234,6 +225,7 @@ export function EditorPane({ onOpenSearch }: EditorPaneProps = {}) {
         onTerminalVisibleChange={setTerminalVisible}
         terminalDock={terminalDock}
         onTerminalPlacement={setTerminalPlacement}
+        onRevealTerminal={terminalAvailable ? revealTerminal : undefined}
       />
       {/* The `desktopBridge != null` clause re-narrows the bridge to non-null for
           the prop — the derived `terminalAvailable` boolean can't narrow it. */}

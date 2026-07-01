@@ -42,6 +42,7 @@
     "0Gd0NU": ["Shared"],
     "0LBDjY": ["\"", ["0"], "\" uninstalled — back to a draft"],
     "0NA4b3": ["Keep my version"],
+    "0SBTff": ["Show terminal"],
     "0YEbfk": ["Connect to AI tools"],
     "0YUS3Q": ["Subfolder under current folder"],
     "0_J12R": [
@@ -264,7 +265,6 @@
     "67f-3g": ["Duplicate succeeded but the sidebar may be out of date — refresh to resync"],
     "6Aih4U": ["Offline"],
     "6EKG_c": ["What agents match on to decide when to use the skill."],
-    "6I7cJR": ["Open chat"],
     "6LbUG7": ["The repository is private and your GitHub account doesn't have access to it."],
     "6MnZEC": ["Terminal failed to load"],
     "6O626z": ["No headings match \"", ["trimmedAnchorQuery"], "\""],
@@ -395,6 +395,7 @@
     "9fvog2": ["Preview unavailable: ", ["errorDetail"]],
     "9i21pa": ["Commits happen automatically"],
     "9jnjV0": ["Embed an audio file with native player controls."],
+    "9mEZeD": [["name"], " CLI"],
     "9npOH9": ["Open file"],
     "9o1bIV": [["behind"], " behind"],
     "9oE4C3": ["Browse your repos:"],
@@ -410,6 +411,7 @@
     "AAlr5Y": [
       "No collab server for this worktree — run <0>ok start</0> here, or reopen the project."
     ],
+    "AB4qw9": ["New terminal"],
     "AE7BY3": ["The terminal session ended."],
     "AIn2Yv": [["displayName"], " CLI, ", ["hint"]],
     "ALhMYW": ["Terminal"],
@@ -970,6 +972,7 @@
     "Q7W-mC": ["Same folder as current file"],
     "Q8A-U_": ["Connected to"],
     "QDZbvN": [["diffDays"], "d ago"],
+    "QJaG-9": ["Choose CLI for new chat"],
     "QNxpRm": ["Dock terminal to the right"],
     "QOINDn": ["empty"],
     "QQghPu": ["Install in Claude Desktop"],
@@ -1616,7 +1619,6 @@
       ["trimmedSlug"],
       "</0> already exists here. Saving creates a local copy that overrides it for this folder."
     ],
-    "k0vc0N": ["New terminal tab"],
     "kCNU4q": [
       "Indexing your pages — ",
       ["semanticIndexedCount"],
@@ -1737,6 +1739,7 @@
       "This path is on an external volume (/Volumes/...). OpenKnowledge will lose track of files when the drive ejects."
     ],
     "nNYV3Y": ["and ", ["remaining"], " more"],
+    "nP-KFo": ["New ", ["0"], " chat"],
     "nTwL53": ["Open a doc to share its URL."],
     "nUNZL4": ["Ask ", ["0"]],
     "nWv1ja": ["Manage hidden files in Settings → Ignore patterns."],
@@ -1824,7 +1827,6 @@
     "pmKdif": ["Failed: ", ["loadError"]],
     "pmUArF": ["Workspace"],
     "ppDgFi": ["Restart with this app's version"],
-    "pqZJT2": ["Close chat"],
     "pzutoc": ["Italic"],
     "q2kXMG": ["Inline Math"],
     "q4YJl_": ["The terminal session ended (exit code ", ["0"], ")."],

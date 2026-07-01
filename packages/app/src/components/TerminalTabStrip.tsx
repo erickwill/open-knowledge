@@ -1,11 +1,10 @@
+import type { TerminalCli } from '@inkeep/open-knowledge-core';
 import { Trans, useLingui } from '@lingui/react/macro';
 import {
   ChevronDownIcon,
   ChevronRightIcon,
   PanelBottomIcon,
   PanelRightIcon,
-  PlusIcon,
-  SquareTerminalIcon,
   XIcon,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -14,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { TerminalDockPosition } from '@/lib/terminal-dock-store';
 import { cn } from '@/lib/utils';
+import { TerminalNewChatButton, type TerminalNewTabChoice } from './TerminalNewChatButton';
 
 export interface TerminalTabDescriptor {
   readonly id: string;
@@ -25,12 +25,13 @@ interface TerminalTabStripProps {
   readonly activeSessionId: string;
   readonly onSelect: (id: string) => void;
   readonly onTabActivate?: (id: string) => void;
-  /** Fires when the user clicks "New chat" (hugs the last tab) — launch the
-   *  default CLI promptless in a fresh session. */
-  readonly onNewChat: () => void;
-  /** Fires when the user clicks "New terminal tab" (trailing group) — open a
-   *  bare shell (the previous `+` behavior). */
-  readonly onNewTerminalTab: () => void;
+  /** The New-chat split button's current pick — a CLI (resolved by the host from
+   *  the sticky pick + installed set) or `'terminal'` (a bare shell). Drives the
+   *  primary icon/label + the dropdown checkmark. */
+  readonly newChatSelected: TerminalNewTabChoice;
+  readonly onNewChatLaunch: () => void;
+  readonly onNewChatPickCli: (cli: TerminalCli) => void;
+  readonly onNewChatPickTerminal: () => void;
   readonly onClose: (id: string) => void;
   /** Where the terminal is currently docked — drives the dock-toggle + collapse
    *  button icons/labels. */
@@ -46,8 +47,10 @@ export function TerminalTabStrip({
   activeSessionId,
   onSelect,
   onTabActivate,
-  onNewChat,
-  onNewTerminalTab,
+  newChatSelected,
+  onNewChatLaunch,
+  onNewChatPickCli,
+  onNewChatPickTerminal,
   onClose,
   dockPosition,
   onToggleDock,
@@ -79,13 +82,23 @@ export function TerminalTabStrip({
                   isActive ? 'bg-muted' : 'hover:bg-muted/50',
                 )}
               >
-                <TabsTrigger
-                  value={session.id}
-                  onClick={() => onTabActivate?.(session.id)}
-                  className="h-7 flex-none rounded-md px-2 text-xs"
-                >
-                  <span className="max-w-40 truncate">{session.label}</span>
-                </TabsTrigger>
+                {/* The label truncates at max-w-40, so a process-set title
+                    (OSC 0/2) that overflows is hard-clipped in the tab — the
+                    tooltip surfaces the full title on hover. */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <TabsTrigger
+                      value={session.id}
+                      onClick={() => onTabActivate?.(session.id)}
+                      className="h-7 flex-none rounded-md px-2 text-xs"
+                    >
+                      <span className="max-w-40 truncate">{session.label}</span>
+                    </TabsTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" sideOffset={8}>
+                    {session.label}
+                  </TooltipContent>
+                </Tooltip>
                 <Button
                   type="button"
                   variant="ghost"
@@ -107,45 +120,18 @@ export function TerminalTabStrip({
             );
           })}
         </TabsList>
-        {/* New chat hugs the last tab (outside the tablist's scroll+fade so it is
-            never clipped): launch the default CLI promptless. */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              aria-label={t`New chat`}
-              className="shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
-              onClick={onNewChat}
-            >
-              <PlusIcon aria-hidden="true" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" sideOffset={8}>
-            <Trans>New chat</Trans>
-          </TooltipContent>
-        </Tooltip>
+        {/* New-chat split button hugs the last tab (outside the tablist's
+            scroll+fade so it is never clipped): the primary launches the default
+            CLI, the carat switches CLI or opens a bare terminal. */}
+        <TerminalNewChatButton
+          selected={newChatSelected}
+          onLaunchSelected={onNewChatLaunch}
+          onPickCli={onNewChatPickCli}
+          onPickTerminal={onNewChatPickTerminal}
+          className="shrink-0"
+        />
         {/* Spacer pushes the trailing controls to the far right. */}
         <div className="flex-1" />
-        {/* New terminal tab opens a bare shell (the previous `+` behavior). */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              aria-label={t`New terminal tab`}
-              className="shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
-              onClick={onNewTerminalTab}
-            >
-              <SquareTerminalIcon aria-hidden="true" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" sideOffset={8}>
-            <Trans>New terminal tab</Trans>
-          </TooltipContent>
-        </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

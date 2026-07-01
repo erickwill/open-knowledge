@@ -6,11 +6,16 @@ import { TabsContent } from '@/components/ui/tabs';
 import { resolveDefaultCli } from '@/lib/default-cli-resolver';
 import type { OkDesktopBridge } from '@/lib/desktop-bridge-types';
 import type { TerminalDockPosition } from '@/lib/terminal-dock-store';
-import { loadStickyAgent } from '@/lib/unified-agent-store';
+import {
+  getInitialPreferBareTerminal,
+  writePreferBareTerminal,
+} from '@/lib/terminal-new-tab-store';
+import { loadStickyAgent, saveStickyAgent, terminalCliId } from '@/lib/unified-agent-store';
 import { emitOpenAskAiComposer } from './ask-ai-composer-events';
 import type { TerminalLaunchIntent } from './EditorPane';
 import { subscribeToActiveTerminalInput } from './handoff/terminal-input-events';
 import { TerminalGate } from './TerminalGate';
+import type { TerminalNewTabChoice } from './TerminalNewChatButton';
 import { TerminalTabStrip } from './TerminalTabStrip';
 
 /** A concurrent terminal session the host keeps as a tab. `id` is a stable
@@ -125,13 +130,36 @@ export function TerminalSessionsHost({
     setActiveSessionId(id);
   }
 
-  function openNewChatSession() {
+  const [stickyCliId, setStickyCliId] = useState<string | null>(() => loadStickyAgent());
+  const [preferBareTerminal, setPreferBareTerminal] = useState(() =>
+    getInitialPreferBareTerminal(),
+  );
+  const newChatDefaultCli = resolveDefaultCli(stickyCliId, installedClis ?? {});
+  const newChatSelected: TerminalNewTabChoice = preferBareTerminal ? 'terminal' : newChatDefaultCli;
+
+  function openNewChatSession(cli: TerminalCli) {
     stripLaunchNonceRef.current += 1;
-    openSession({
-      prompt: null,
-      cli: resolveDefaultCli(loadStickyAgent(), installedClis ?? {}),
-      nonce: stripLaunchNonceRef.current,
-    });
+    openSession({ prompt: null, cli, nonce: stripLaunchNonceRef.current });
+  }
+
+  function launchSelectedNewTab() {
+    if (preferBareTerminal) openSession(null);
+    else openNewChatSession(newChatDefaultCli);
+  }
+
+  function pickNewChatCli(cli: TerminalCli) {
+    setPreferBareTerminal(false);
+    writePreferBareTerminal(false);
+    const id = terminalCliId(cli);
+    setStickyCliId(id);
+    saveStickyAgent(id);
+    openNewChatSession(cli);
+  }
+
+  function pickNewChatTerminal() {
+    setPreferBareTerminal(true);
+    writePreferBareTerminal(true);
+    openSession(null);
   }
 
   function setSessionTitle(id: string, title: string) {
@@ -287,8 +315,10 @@ export function TerminalSessionsHost({
         activeSessionId={activeSessionId}
         onSelect={setActiveSessionId}
         onTabActivate={(id) => queueMicrotask(() => focusTerminalSession(id))}
-        onNewChat={openNewChatSession}
-        onNewTerminalTab={() => openSession(null)}
+        newChatSelected={newChatSelected}
+        onNewChatLaunch={launchSelectedNewTab}
+        onNewChatPickCli={pickNewChatCli}
+        onNewChatPickTerminal={pickNewChatTerminal}
         onClose={closeSession}
         dockPosition={dockPosition}
         onToggleDock={onToggleDock}

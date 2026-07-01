@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { EditorModeValue } from '@/editor/use-editor-mode.ts';
 import { formatShortcut, formatShortcutLabel } from '@/lib/keyboard-shortcuts';
 import { parseProjectSkillContentDocName } from '@/lib/managed-artifact-doc-name';
+import { cn } from '@/lib/utils';
 import { EditorBreadcrumb } from './EditorBreadcrumb';
 import { EditorModeToggle } from './EditorModeToggle';
 
@@ -23,6 +24,11 @@ interface EditorToolbarProps {
   onAddProperty: () => void;
   isPanelCollapsed: boolean;
   onTogglePanel: () => void;
+  /** Reserve right-side room in the action cluster so it sits left of the
+   *  right-dock "Show terminal" reveal tab (which pins to the far-right corner
+   *  the cluster reaches once the doc panel is collapsed) — keeping the two in
+   *  one row instead of overlapping. */
+  reserveRightGutter?: boolean;
 }
 
 export function EditorToolbar({
@@ -34,6 +40,7 @@ export function EditorToolbar({
   onAddProperty,
   isPanelCollapsed,
   onTogglePanel,
+  reserveRightGutter = false,
 }: EditorToolbarProps) {
   const { t } = useLingui();
   const panelShortcut = formatShortcut('toggle-document-panel');
@@ -90,7 +97,12 @@ export function EditorToolbar({
         them clear of the `.editor-content-aligned` grid; `pointer-events-auto`
         re-enables clicks under the toolbar's `pointer-events-none` root.
       */}
-      <div className="pointer-events-auto absolute top-0 right-0 flex items-center justify-end gap-1 py-2 pr-2">
+      <div
+        className={cn(
+          'pointer-events-auto absolute top-0 right-0 flex items-center justify-end gap-1 py-2 pr-2',
+          reserveRightGutter && 'pr-9',
+        )}
+      >
         {activeSkill ? (
           <Suspense fallback={null}>
             <SkillEditorActions scope={activeSkill.scope} name={activeSkill.name} />
