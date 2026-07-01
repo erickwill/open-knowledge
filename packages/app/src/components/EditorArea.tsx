@@ -16,7 +16,6 @@ import { AssetPreview } from '@/components/AssetPreview';
 import { DocPanel, type PanelTab } from '@/components/DocPanel';
 import {
   consumePendingDocPanelTabRequest,
-  subscribeToDocPanelCollapseRequests,
   subscribeToDocPanelTabRequests,
 } from '@/components/doc-panel-events';
 import { EditorSkeleton } from '@/components/EditorSkeleton';
@@ -60,6 +59,7 @@ import type { EditorMode } from './EditorPane';
 import { EditorToolbar } from './EditorToolbar';
 import { shouldPaintOverlay } from './editor-area-overlay';
 import { TerminalDock } from './TerminalDock';
+import { TerminalRevealTab } from './TerminalRevealTab';
 import { xtermThemeForMode } from './terminal-theme';
 
 const LazyActivityModeContent = lazy(async () => {
@@ -92,6 +92,10 @@ interface EditorAreaProps {
   /** Report the terminal's attach point up to EditorPane (which owns the session
    *  host). See {@link TerminalPlacement}. */
   onTerminalPlacement?: (placement: TerminalPlacement) => void;
+  /** Reveal the terminal (and spawn a default-CLI session if none is open) —
+   *  drives the edge "Show terminal" tab shown while the terminal is hidden.
+   *  Absent on the web host (no terminal). */
+  onRevealTerminal?: () => void;
 }
 
 export function EditorArea(props: EditorAreaProps) {
@@ -133,6 +137,7 @@ function EditorAreaInner({
   onTerminalVisibleChange,
   terminalDock = 'right',
   onTerminalPlacement,
+  onRevealTerminal,
 }: EditorAreaProps) {
   const { t } = useLingui();
   const { resolvedTheme } = useTheme();
@@ -193,6 +198,9 @@ function EditorAreaInner({
 
   const rightDocked = terminalDock === 'right';
   const terminalDockPosition: TerminalDockPosition = rightDocked ? 'right' : 'bottom';
+  const revealTabHidden = terminalBridge != null && !terminalVisible && onRevealTerminal != null;
+  const bottomRevealTabPresent = revealTabHidden && !rightDocked;
+  const rightRevealTabPresent = revealTabHidden && rightDocked;
   const rightTerminalShowing = rightDocked && terminalVisible && rightTerminalContainer != null;
   const activeTerminalContainer = rightTerminalShowing
     ? rightTerminalContainer
@@ -321,21 +329,6 @@ function EditorAreaInner({
     if (docPanelExpandSignal === 0) return;
     panelRef.current?.expand();
   }, [docPanelExpandSignal, panelRef]);
-
-  useEffect(() => {
-    let rafId = 0;
-    const unsubscribe = subscribeToDocPanelCollapseRequests(() => {
-      if (terminalDock !== 'right') return;
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        panelRef.current?.collapse();
-      });
-    });
-    return () => {
-      cancelAnimationFrame(rafId);
-      unsubscribe();
-    };
-  }, [panelRef, terminalDock]);
 
   useLayoutEffect(() => {
     if (!isCollapsed) return;
@@ -612,6 +605,7 @@ function EditorAreaInner({
               onAddProperty={openAddPropertyForm}
               isPanelCollapsed={isPanelCollapsed}
               onTogglePanel={togglePanel}
+              reserveRightGutter={rightRevealTabPresent && isPanelCollapsed}
             />
           )}
           {/* Floats over the bottom of the scroll area (an absolute overlay, like
@@ -638,6 +632,7 @@ function EditorAreaInner({
               ? { onReopen: () => setComposerDismissed(false) }
               : null
           }
+          reserveRightGutter={bottomRevealTabPresent}
         />
       </div>
     );
@@ -701,6 +696,7 @@ function EditorAreaInner({
         dockPosition={terminalDockPosition}
         onBottomContainer={setBottomTerminalContainer}
         onEditorRegion={setTerminalEditorRegion}
+        onReveal={onRevealTerminal}
       >
         {viewContent}
       </TerminalDock>
@@ -756,7 +752,7 @@ function EditorAreaInner({
     (rightPanel != null && !initialRightCollapsed) || terminalColumnPresent;
 
   return (
-    <div className="flex min-h-0 flex-1" ref={setGroupContainerEl}>
+    <div className="relative flex min-h-0 flex-1" ref={setGroupContainerEl}>
       <ResizablePanelGroup
         orientation="horizontal"
         data-dragging={isDraggingDocHandle || isDraggingTerminalHandle || undefined}
@@ -774,6 +770,13 @@ function EditorAreaInner({
         {rightPanel}
         {terminalColumn}
       </ResizablePanelGroup>
+      {rightRevealTabPresent ? (
+        <TerminalRevealTab
+          dockPosition="right"
+          onReveal={onRevealTerminal}
+          className="top-2.5 right-0"
+        />
+      ) : null}
     </div>
   );
 }

@@ -323,6 +323,10 @@ msgstr "{minutes} min ago"
 msgid "{minutes}m ago"
 msgstr "{minutes}m ago"
 
+#: src/components/TerminalNewChatButton.tsx
+msgid "{name} CLI"
+msgstr "{name} CLI"
+
 #: src/components/GraphPanel.tsx
 msgid "{nodeCount, plural, one {# node} other {# nodes}}"
 msgstr "{nodeCount, plural, one {# node} other {# nodes}}"
@@ -1040,6 +1044,10 @@ msgstr "Checklist with checkboxes."
 msgid "Choose agent"
 msgstr "Choose agent"
 
+#: src/components/TerminalNewChatButton.tsx
+msgid "Choose CLI for new chat"
+msgstr "Choose CLI for new chat"
+
 #: src/components/settings/SharingSection.tsx
 msgid "Choose whether this project's OpenKnowledge setup, including its AI-tool connections, is saved with the project so teammates get it too, or kept only on your computer."
 msgstr "Choose whether this project's OpenKnowledge setup, including its AI-tool connections, is saved with the project so teammates get it too, or kept only on your computer."
@@ -1171,10 +1179,6 @@ msgstr "Close all"
 #: src/components/EditorTabs.tsx
 msgid "Close all unpinned"
 msgstr "Close all unpinned"
-
-#: src/components/EditorHeader.tsx
-msgid "Close chat"
-msgstr "Close chat"
 
 #: src/editor/find-replace/FindReplaceBar.tsx
 msgid "Close find"
@@ -3898,7 +3902,12 @@ msgstr "never"
 msgid "New"
 msgstr "New"
 
-#: src/components/TerminalTabStrip.tsx
+#. placeholder {0}: TERMINAL_CLIS[selected].displayName
+#: src/components/TerminalNewChatButton.tsx
+msgid "New {0} chat"
+msgstr "New {0} chat"
+
+#: src/components/TerminalNewChatButton.tsx
 msgid "New chat"
 msgstr "New chat"
 
@@ -3960,9 +3969,9 @@ msgstr "New tab"
 msgid "New template"
 msgstr "New template"
 
-#: src/components/TerminalTabStrip.tsx
-msgid "New terminal tab"
-msgstr "New terminal tab"
+#: src/components/TerminalNewChatButton.tsx
+msgid "New terminal"
+msgstr "New terminal"
 
 #: src/editor/find-replace/FindReplaceBar.tsx
 msgid "Next match"
@@ -4350,10 +4359,6 @@ msgstr "Open and focus the Ask AI composer for the current editor selection."
 #: src/lib/keyboard-shortcuts.ts
 msgid "Open and focus the bottom Ask AI prompt composer."
 msgstr "Open and focus the bottom Ask AI prompt composer."
-
-#: src/components/EditorHeader.tsx
-msgid "Open chat"
-msgstr "Open chat"
 
 #: src/lib/keyboard-shortcuts.ts
 msgid "Open CodeMirror search in source editor mode."
@@ -5765,6 +5770,10 @@ msgstr "Show replace"
 msgid "Show selection preview"
 msgstr "Show selection preview"
 
+#: src/components/TerminalRevealTab.tsx
+msgid "Show terminal"
+msgstr "Show terminal"
+
 #: src/editor/components/Pdf.tsx
 msgid "Show thumbnails"
 msgstr "Show thumbnails"
@@ -6199,6 +6208,7 @@ msgstr "Templates available"
 #: src/components/handoff/OpenInAgentMenu.tsx
 #: src/components/settings/SettingsDialogShell.tsx
 #: src/components/settings/TerminalSection.tsx
+#: src/components/TerminalNewChatButton.tsx
 #: src/components/TerminalPanel.tsx
 msgid "Terminal"
 msgstr "Terminal"

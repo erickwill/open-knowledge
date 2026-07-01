@@ -7,6 +7,7 @@ import {
   useEditorFooterIdentity,
 } from '@/hooks/use-editor-footer-identity';
 import type { DocumentStats } from '@/lib/document-stats';
+import { cn } from '@/lib/utils';
 
 interface EditorFooterProps {
   stats: DocumentStats;
@@ -20,6 +21,10 @@ interface EditorFooterProps {
   /** When set, a "Ask AI" reopen badge renders next to the stats — shown only
    *  while the bottom composer is dismissed. Clicking it reopens the composer. */
   composerBadge?: { onReopen: () => void } | null;
+  /** Reserve extra right padding so the right-aligned stats clear the
+   *  bottom-dock "Show terminal" reveal tab, which floats over the footer's
+   *  bottom-right corner when the terminal is hidden. */
+  reserveRightGutter?: boolean;
 }
 
 export function EditorFooter({
@@ -27,6 +32,7 @@ export function EditorFooter({
   selectionStats,
   showStats = true,
   composerBadge,
+  reserveRightGutter = false,
 }: EditorFooterProps) {
   const { t } = useLingui();
   const identity = useEditorFooterIdentity();
@@ -43,7 +49,10 @@ export function EditorFooter({
             ? t`Selection statistics`
             : t`Document statistics`
       }
-      className="relative flex h-6 shrink-0 items-center justify-between gap-3 bg-background px-3 text-2xs text-muted-foreground"
+      className={cn(
+        'relative flex h-6 shrink-0 items-center justify-between gap-3 bg-background px-3 text-2xs text-muted-foreground',
+        reserveRightGutter && 'pr-12',
+      )}
     >
       <div
         aria-hidden

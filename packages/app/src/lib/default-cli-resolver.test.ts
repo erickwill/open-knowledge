@@ -18,9 +18,9 @@ describe('resolveDefaultCli', () => {
       );
     });
 
-    test('a sticky CLI that is NOT installed falls through to first-installed by priority', () => {
+    test('a sticky CLI that is NOT installed is still honored (respect the explicit pick)', () => {
       expect(resolveDefaultCli(terminalCliId('cursor'), installedMap(['opencode', 'codex']))).toBe(
-        'codex',
+        'cursor',
       );
     });
 
@@ -28,8 +28,8 @@ describe('resolveDefaultCli', () => {
       expect(resolveDefaultCli(TERMINAL_CLI_ID, installedMap(['claude', 'codex']))).toBe('claude');
     });
 
-    test('the legacy bare sentinel falls through when claude is not installed', () => {
-      expect(resolveDefaultCli(TERMINAL_CLI_ID, installedMap(['opencode']))).toBe('opencode');
+    test('the legacy bare sentinel is honored (claude) even when claude is not installed', () => {
+      expect(resolveDefaultCli(TERMINAL_CLI_ID, installedMap(['opencode']))).toBe('claude');
     });
 
     test('an app-target sticky (not a CLI sentinel) is ignored — New chat only launches CLIs', () => {
@@ -62,8 +62,8 @@ describe('resolveDefaultCli', () => {
       ).toBe('claude');
     });
 
-    test('a KNOWN-absent sticky CLI with nothing installed → claude', () => {
-      expect(resolveDefaultCli(terminalCliId('codex'), installedMap([]))).toBe('claude');
+    test('a KNOWN-absent sticky CLI with nothing installed is still honored', () => {
+      expect(resolveDefaultCli(terminalCliId('codex'), installedMap([]))).toBe('codex');
     });
   });
 

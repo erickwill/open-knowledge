@@ -6,6 +6,6 @@ export function resolveDefaultCli(
   installed: Partial<Record<TerminalCli, boolean>>,
 ): TerminalCli {
   const stickyCli = parseStickyCliId(sticky);
-  if (stickyCli && installed[stickyCli] !== false) return stickyCli;
+  if (stickyCli) return stickyCli;
   return TERMINAL_CLI_IDS.find((cli) => installed[cli] === true) ?? 'claude';
 }

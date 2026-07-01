@@ -323,6 +323,10 @@ msgstr ""
 msgid "{minutes}m ago"
 msgstr ""
 
+#: src/components/TerminalNewChatButton.tsx
+msgid "{name} CLI"
+msgstr ""
+
 #: src/components/GraphPanel.tsx
 msgid "{nodeCount, plural, one {# node} other {# nodes}}"
 msgstr ""
@@ -1035,6 +1039,10 @@ msgstr ""
 msgid "Choose agent"
 msgstr ""
 
+#: src/components/TerminalNewChatButton.tsx
+msgid "Choose CLI for new chat"
+msgstr ""
+
 #: src/components/settings/SharingSection.tsx
 msgid "Choose whether this project's OpenKnowledge setup, including its AI-tool connections, is saved with the project so teammates get it too, or kept only on your computer."
 msgstr ""
@@ -1165,10 +1173,6 @@ msgstr ""
 
 #: src/components/EditorTabs.tsx
 msgid "Close all unpinned"
-msgstr ""
-
-#: src/components/EditorHeader.tsx
-msgid "Close chat"
 msgstr ""
 
 #: src/editor/find-replace/FindReplaceBar.tsx
@@ -3893,7 +3897,12 @@ msgstr ""
 msgid "New"
 msgstr ""
 
-#: src/components/TerminalTabStrip.tsx
+#. placeholder {0}: TERMINAL_CLIS[selected].displayName
+#: src/components/TerminalNewChatButton.tsx
+msgid "New {0} chat"
+msgstr ""
+
+#: src/components/TerminalNewChatButton.tsx
 msgid "New chat"
 msgstr ""
 
@@ -3955,8 +3964,8 @@ msgstr ""
 msgid "New template"
 msgstr ""
 
-#: src/components/TerminalTabStrip.tsx
-msgid "New terminal tab"
+#: src/components/TerminalNewChatButton.tsx
+msgid "New terminal"
 msgstr ""
 
 #: src/editor/find-replace/FindReplaceBar.tsx
@@ -4344,10 +4353,6 @@ msgstr ""
 
 #: src/lib/keyboard-shortcuts.ts
 msgid "Open and focus the bottom Ask AI prompt composer."
-msgstr ""
-
-#: src/components/EditorHeader.tsx
-msgid "Open chat"
 msgstr ""
 
 #: src/lib/keyboard-shortcuts.ts
@@ -5760,6 +5765,10 @@ msgstr ""
 msgid "Show selection preview"
 msgstr ""
 
+#: src/components/TerminalRevealTab.tsx
+msgid "Show terminal"
+msgstr ""
+
 #: src/editor/components/Pdf.tsx
 msgid "Show thumbnails"
 msgstr ""
@@ -6194,6 +6203,7 @@ msgstr ""
 #: src/components/handoff/OpenInAgentMenu.tsx
 #: src/components/settings/SettingsDialogShell.tsx
 #: src/components/settings/TerminalSection.tsx
+#: src/components/TerminalNewChatButton.tsx
 #: src/components/TerminalPanel.tsx
 msgid "Terminal"
 msgstr ""

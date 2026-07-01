@@ -46,8 +46,12 @@ mock.module('@/components/ui/resizable', () => ({
     );
   },
   // biome-ignore lint/suspicious/noExplicitAny: test stub
-  ResizableHandle: ({ onPointerDown }: any) => (
-    <div data-testid="terminal-resize-handle" onPointerDown={onPointerDown} />
+  ResizableHandle: ({ onPointerDown, disabled }: any) => (
+    <div
+      data-testid="terminal-resize-handle"
+      data-disabled={disabled ? 'true' : 'false'}
+      onPointerDown={onPointerDown}
+    />
   ),
 }));
 
@@ -149,7 +153,7 @@ function makeBridge() {
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: test harness props
-function DockHarness({ v, l, onVisibleChange, bridge }: any) {
+function DockHarness({ v, l, onVisibleChange, bridge, onReveal }: any) {
   const [bottomContainer, setBottomContainer] = useState<HTMLDivElement | null>(null);
   const [editorRegionEl, setEditorRegionEl] = useState<HTMLDivElement | null>(null);
   return (
@@ -160,6 +164,7 @@ function DockHarness({ v, l, onVisibleChange, bridge }: any) {
         dockPosition="bottom"
         onBottomContainer={setBottomContainer}
         onEditorRegion={setEditorRegionEl}
+        onReveal={onReveal}
       >
         <div data-testid="editor-child" />
       </TerminalDock>
@@ -181,11 +186,18 @@ function DockHarness({ v, l, onVisibleChange, bridge }: any) {
 function renderDock(
   visible: boolean,
   launch?: { prompt: string; nonce: number; cli?: string } | null,
+  onReveal?: () => void,
 ) {
   const onVisibleChange = mock((_v: boolean) => {});
   const { bridge, create, kill, input, viewMenuPushes, dispatchMenuAction } = makeBridge();
   const ui = (v: boolean, l?: { prompt: string; nonce: number; cli?: string } | null) => (
-    <DockHarness v={v} l={l ?? null} onVisibleChange={onVisibleChange} bridge={bridge} />
+    <DockHarness
+      v={v}
+      l={l ?? null}
+      onVisibleChange={onVisibleChange}
+      bridge={bridge}
+      onReveal={onReveal}
+    />
   );
   const utils = render(ui(visible, launch));
   return {
@@ -225,6 +237,11 @@ function editorRegion(): HTMLElement {
   const region = screen.getByTestId('editor-child').parentElement;
   if (region == null) throw new Error('editor region not found');
   return region;
+}
+
+async function addTerminalTab(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Choose CLI for new chat' }));
+  await user.click(await screen.findByRole('menuitem', { name: 'Terminal' }));
 }
 
 describe('TerminalDock multi-session', () => {
@@ -274,7 +291,7 @@ describe('TerminalDock multi-session', () => {
     expect(screen.getAllByTestId('terminal-session')).toHaveLength(1);
     const firstActive = activePanelId();
 
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
 
     expect(screen.getAllByTestId('terminal-session')).toHaveLength(2);
     expect(activePanelId()).not.toBe(firstActive);
@@ -284,8 +301,8 @@ describe('TerminalDock multi-session', () => {
   test('all sessions stay mounted with exactly one active', async () => {
     const user = userEvent.setup();
     renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
+    await addTerminalTab(user);
 
     expect(screen.getAllByTestId('terminal-session')).toHaveLength(3);
     const tabpanels = screen.getAllByRole('tabpanel', { hidden: true });
@@ -298,7 +315,7 @@ describe('TerminalDock multi-session', () => {
   test('switching tabs changes the active session without unmounting the others', async () => {
     const user = userEvent.setup();
     renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
     const secondActive = activePanelId();
 
     await user.click(screen.getByRole('tab', { name: 'Terminal 1' }));
@@ -310,7 +327,7 @@ describe('TerminalDock multi-session', () => {
   test('typing target stays scoped: the active panel is the only one shown', async () => {
     const user = userEvent.setup();
     renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
 
     expect(sessionPanels()).toHaveLength(2);
     const activeCount = document.querySelectorAll(
@@ -322,7 +339,7 @@ describe('TerminalDock multi-session', () => {
   test('selecting a tab moves focus to that session', async () => {
     const user = userEvent.setup();
     renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
     const second = activePanelId();
 
     await user.click(screen.getByRole('tab', { name: 'Terminal 1' }));
@@ -338,7 +355,7 @@ describe('TerminalDock multi-session', () => {
   test('closing a non-active tab removes only it and leaves the active one running', async () => {
     const user = userEvent.setup();
     renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
     const activeBefore = activePanelId();
 
     await user.click(screen.getByRole('button', { name: 'Close Terminal 1' }));
@@ -350,7 +367,7 @@ describe('TerminalDock multi-session', () => {
   test("a session's OSC title becomes its tab label; siblings keep the default", async () => {
     const user = userEvent.setup();
     const view = renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
     await waitFor(() => expect(view.create).toHaveBeenCalledTimes(2));
 
     act(() => emitTitle('pty-1', 'claude — repo'));
@@ -396,7 +413,7 @@ describe('TerminalDock multi-session', () => {
   test("closing a tab reaps only that session's PTY and leaves the others alive", async () => {
     const user = userEvent.setup();
     const view = renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
     await waitFor(() => expect(view.create).toHaveBeenCalledTimes(2));
     expect(view.kill).not.toHaveBeenCalled();
 
@@ -410,8 +427,8 @@ describe('TerminalDock multi-session', () => {
   test('closing the active tab activates its left neighbor', async () => {
     const user = userEvent.setup();
     renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
+    await addTerminalTab(user);
     await user.click(screen.getByRole('tab', { name: 'Terminal 2' }));
     const middle = activePanelId();
 
@@ -428,7 +445,7 @@ describe('TerminalDock multi-session', () => {
   test('closing the active leftmost tab activates its right neighbor', async () => {
     const user = userEvent.setup();
     renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
     await user.click(screen.getByRole('tab', { name: 'Terminal 1' }));
     const closedId = activePanelId();
     const rightNeighborId =
@@ -445,8 +462,8 @@ describe('TerminalDock multi-session', () => {
   test('closing the active tab moves focus into the surviving neighbor', async () => {
     const user = userEvent.setup();
     renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
+    await addTerminalTab(user);
     await user.click(screen.getByRole('tab', { name: 'Terminal 2' }));
 
     await user.click(screen.getByRole('button', { name: 'Close Terminal 2' }));
@@ -473,8 +490,8 @@ describe('TerminalDock multi-session', () => {
   test('hiding the dock preserves every session and keeps the last-active tab on reopen', async () => {
     const user = userEvent.setup();
     const view = renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
+    await addTerminalTab(user);
     await user.click(screen.getByRole('tab', { name: 'Terminal 2' }));
     const activeBeforeHide = activePanelId();
     expect(screen.getAllByTestId('terminal-session')).toHaveLength(3);
@@ -590,7 +607,7 @@ describe('TerminalDock multi-session', () => {
   test('the Terminal menu "Kill Terminal" action closes the active tab', async () => {
     const user = userEvent.setup();
     const view = renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
     expect(screen.getAllByTestId('terminal-session')).toHaveLength(2);
 
     act(() => view.dispatchMenuAction('kill-terminal'));
@@ -601,8 +618,8 @@ describe('TerminalDock multi-session', () => {
   test('Cmd+number jumps to the matching tab while the terminal is focused', async () => {
     const user = userEvent.setup();
     renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
+    await addTerminalTab(user);
     const panels = sessionPanels();
     const thirdSink = panels[2]?.querySelector<HTMLElement>('.xterm-helper-textarea');
     act(() => thirdSink?.focus());
@@ -628,7 +645,7 @@ describe('TerminalDock multi-session', () => {
   test('Cmd+number for a tab that does not exist is left for the shell', async () => {
     const user = userEvent.setup();
     renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
     const panels = sessionPanels();
     act(() => panels[1]?.querySelector<HTMLElement>('.xterm-helper-textarea')?.focus());
     const before = activePanelId();
@@ -650,7 +667,7 @@ describe('TerminalDock multi-session', () => {
   test('Cmd+number is ignored when focus is outside the terminal dock', async () => {
     const user = userEvent.setup();
     renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
     await user.click(screen.getByRole('tab', { name: 'Terminal 1' }));
     const before = activePanelId();
 
@@ -672,7 +689,7 @@ describe('TerminalDock multi-session', () => {
   test('a non-chord keystroke is not intercepted so it reaches the active shell', async () => {
     const user = userEvent.setup();
     renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
     const before = activePanelId();
     act(() => sessionPanels()[0]?.querySelector<HTMLElement>('.xterm-helper-textarea')?.focus());
 
@@ -711,7 +728,7 @@ describe('TerminalDock multi-session', () => {
   test('wires each tab to its panel via accessible tablist/tabpanel relationships', async () => {
     const user = userEvent.setup();
     renderDock(true);
-    await user.click(screen.getByRole('button', { name: 'New terminal tab' }));
+    await addTerminalTab(user);
 
     const tablist = screen.getByRole('tablist', { name: 'Terminal sessions' });
     const tabs = within(tablist).getAllByRole('tab');
@@ -742,6 +759,42 @@ describe('TerminalDock multi-session', () => {
 
     act(() => view.rerender(true));
     expect(document.activeElement).toBe(session);
+  });
+
+  test('shows the bottom-edge "Show terminal" tab only while hidden, inside the editor column', () => {
+    const onReveal = mock(() => {});
+    const view = renderDock(false, null, onReveal);
+
+    const reveal = screen.getByRole('button', { name: 'Show terminal' });
+    expect(editorRegion().contains(reveal)).toBe(true);
+
+    act(() => view.rerender(true));
+    expect(screen.queryByRole('button', { name: 'Show terminal' })).toBeNull();
+  });
+
+  test('clicking the reveal tab requests a reveal', async () => {
+    const user = userEvent.setup();
+    const onReveal = mock(() => {});
+    renderDock(false, null, onReveal);
+
+    await user.click(screen.getByRole('button', { name: 'Show terminal' }));
+
+    expect(onReveal).toHaveBeenCalledTimes(1);
+  });
+
+  test('renders no reveal tab when no reveal handler is wired (web host)', () => {
+    renderDock(false);
+    expect(screen.queryByRole('button', { name: 'Show terminal' })).toBeNull();
+  });
+
+  test('disables the resize handle while hidden so there is no drag-to-open', () => {
+    const view = renderDock(false);
+    expect(screen.getByTestId('terminal-resize-handle').getAttribute('data-disabled')).toBe('true');
+
+    act(() => view.rerender(true));
+    expect(screen.getByTestId('terminal-resize-handle').getAttribute('data-disabled')).toBe(
+      'false',
+    );
   });
 });
 
