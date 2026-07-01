@@ -27,10 +27,12 @@ const schema = new Schema({
   },
 });
 
-/** A minimal fake TipTap editor. The click handler reads the selection text via
- *  `state.doc.textBetween(from, to)`; `collapsed` yields an empty selection so
- *  the caret-only → composer fallback can be exercised. */
-function makeEditor(docName: string, text: string, collapsed = false): Editor {
+/** A minimal fake TipTap editor. The click handler serializes the selection to
+ *  markdown via `serializeWysiwygSelection` (which reads `selection.content()`);
+ *  `collapsed` yields an empty selection so the caret-only → composer fallback
+ *  can be exercised. A `null` docName leaves the editor with no registered doc
+ *  name (`setEditorDocName` deletes the entry), exercising the ungrounded path. */
+function makeEditor(docName: string | null, text: string, collapsed = false): Editor {
   const doc = schema.node('doc', null, [schema.node('paragraph', null, [schema.text(text)])]);
   const from = 1;
   const to = collapsed ? 1 : 1 + text.length;
@@ -147,7 +149,7 @@ describe('EditWithAiBubbleButton', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  test('clicking the trigger sends the selected passage to the active terminal', async () => {
+  test('clicking the trigger sends a GROUNDED selection prompt to the active terminal', async () => {
     setPlatform('MacIntel');
     const user = userEvent.setup();
     const editor = makeEditor('specs/foo/SPEC', 'A passage.');
@@ -155,7 +157,11 @@ describe('EditWithAiBubbleButton', () => {
 
     await user.click(screen.getByTestId('edit-with-ai-bubble-button'));
 
-    await waitFor(() => expect(terminalInputs).toEqual(['A passage.']));
+    await waitFor(() => expect(terminalInputs).toHaveLength(1));
+    const [prompt] = terminalInputs;
+    expect(prompt).toContain('@specs/foo/SPEC.md');
+    expect(prompt).toContain('A passage.');
+    expect(prompt).not.toBe('A passage.');
     expect(openRequests).toBe(0);
   });
 
@@ -163,6 +169,18 @@ describe('EditWithAiBubbleButton', () => {
     setPlatform('MacIntel');
     const user = userEvent.setup();
     const editor = makeEditor('specs/foo/SPEC', 'A passage.', /* collapsed */ true);
+    renderButton({ editor });
+
+    await user.click(screen.getByTestId('edit-with-ai-bubble-button'));
+
+    await waitFor(() => expect(openRequests).toBe(1));
+    expect(terminalInputs).toEqual([]);
+  });
+
+  test('clicking with no registered doc name opens the composer instead', async () => {
+    setPlatform('MacIntel');
+    const user = userEvent.setup();
+    const editor = makeEditor(null, 'A passage.');
     renderButton({ editor });
 
     await user.click(screen.getByTestId('edit-with-ai-bubble-button'));

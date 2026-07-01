@@ -1,3 +1,4 @@
+import { composeSelectionPrompt } from '@inkeep/open-knowledge-core';
 import { Trans } from '@lingui/react/macro';
 import { isMacOS } from '@tiptap/core';
 import type { Editor } from '@tiptap/react';
@@ -9,6 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useIsEmbedded } from '@/hooks/use-is-embedded';
 import { matchesKeyboardShortcut } from '@/lib/keyboard-shortcuts';
+import { docNameToRelativePath } from '@/lib/workspace-paths';
+import { serializeWysiwygSelection } from '../edit-with-ai-selection';
+import { getEditorDocName } from '../extensions/doc-context';
 
 function isNativeTextControl(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -63,11 +67,21 @@ function EditWithAiBubbleMenu({
         data-testid="edit-with-ai-bubble-button"
         className="gap-1 px-2 text-sm font-medium text-accent-foreground/80"
         onClick={() => {
-          const { from, to } = editor.state.selection;
-          const text = editor.state.doc.textBetween(from, to, '\n');
+          const docName = getEditorDocName(editor);
+          const selectionMarkdown = serializeWysiwygSelection(editor);
           requestAnimationFrame(() => {
-            if (text.trim() === '') emitOpenAskAiComposer();
-            else requestActiveTerminalInput(text);
+            if (docName === null || selectionMarkdown.trim() === '') {
+              emitOpenAskAiComposer();
+              return;
+            }
+            requestActiveTerminalInput(
+              composeSelectionPrompt({
+                relativePath: docNameToRelativePath(docName),
+                instruction: '',
+                selectionMarkdown,
+                target: 'claude-code',
+              }),
+            );
           });
         }}
       >
