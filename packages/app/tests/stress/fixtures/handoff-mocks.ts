@@ -369,6 +369,7 @@ export async function installHandoffMocks(page: Page, cfg: HandoffMockConfig): P
         },
         platform: 'darwin' as const,
         appVersion: 'test-0.0.0',
+        getPathForFile: () => null,
       } satisfies OkDesktopBridge;
 
       // biome-ignore lint/suspicious/noExplicitAny: test-only global attachment.

@@ -752,6 +752,8 @@ export interface OkDesktopBridge {
   readonly platform: 'darwin' | 'win32' | 'linux';
   readonly appVersion: string;
 
+  getPathForFile(file: File): string | null;
+
   debug?: {
     keyringSmoke(): Promise<KeyringSmokeResult>;
   };
