@@ -72,6 +72,7 @@ import {
 } from './editors.ts';
 import { LAUNCH_JSON_PORT } from './ui.ts';
 
+
 const JSONC_PARSE_OPTIONS = { allowTrailingComma: true, disallowComments: false };
 
 const JSONC_INVALID_SYMBOL_CODE: number = 1;
@@ -115,6 +116,7 @@ function isCrlfDominant(text: string): boolean {
   return crlf >= bareLf;
 }
 
+
 const JSON_CONFIG_MAX_BYTES = 10 * 1024 * 1024;
 
 function jsonValueEqual(a: unknown, b: unknown): boolean {
@@ -153,14 +155,43 @@ type JsonUpsertOutcome =
   | { kind: 'written' | 'overwritten' }
   | { kind: 'declined'; reason: McpDeclineReason };
 
+function serverMapPath(
+  topLevelKey: string,
+  subKey: string | undefined,
+  serverName: string,
+): string[] {
+  return subKey === undefined ? [topLevelKey, serverName] : [topLevelKey, subKey, serverName];
+}
+
+function freshServerMapObject(
+  topLevelKey: string,
+  subKey: string | undefined,
+  serverName: string,
+  entry: Record<string, unknown>,
+): Record<string, unknown> {
+  const inner = { [serverName]: entry };
+  return { [topLevelKey]: subKey === undefined ? inner : { [subKey]: inner } };
+}
+
+function readServerContainer(
+  root: Record<string, unknown>,
+  topLevelKey: string,
+  subKey: string | undefined,
+): unknown {
+  const top = root[topLevelKey];
+  if (subKey === undefined) return top;
+  return isObject(top) ? top[subKey] : undefined;
+}
+
 function upsertJsonMcpConfig(
   configPath: string,
   topLevelKey: string,
   serverName: string,
   entry: Record<string, unknown>,
+  subKey?: string,
 ): JsonUpsertOutcome {
   if (!existsSync(configPath)) {
-    writeJsonConfig(configPath, { [topLevelKey]: { [serverName]: entry } });
+    writeJsonConfig(configPath, freshServerMapObject(topLevelKey, subKey, serverName, entry));
     return { kind: 'written' };
   }
   let raw: string;
@@ -171,7 +202,7 @@ function upsertJsonMcpConfig(
     return { kind: 'declined', reason: 'unparseable' };
   }
   if (raw.trim() === '') {
-    writeJsonConfig(configPath, { [topLevelKey]: { [serverName]: entry } });
+    writeJsonConfig(configPath, freshServerMapObject(topLevelKey, subKey, serverName, entry));
     return { kind: 'written' };
   }
   if (Buffer.byteLength(raw, 'utf-8') > JSON_CONFIG_MAX_BYTES) {
@@ -184,7 +215,7 @@ function upsertJsonMcpConfig(
   }
 
   const root = getNodeValue(tree) as Record<string, unknown>;
-  const container = root[topLevelKey];
+  const container = readServerContainer(root, topLevelKey, subKey);
   const existing = isObject(container) ? container[serverName] : undefined;
   const entryExists = existing !== undefined;
   if (entryExists && jsonValueEqual(existing, entry)) {
@@ -194,7 +225,7 @@ function upsertJsonMcpConfig(
   const hasBom = raw.charCodeAt(0) === 0xfeff;
   const body = hasBom ? raw.slice(1) : raw;
   const eol = body.includes('\r\n') ? '\r\n' : '\n';
-  const edits = modifyJsonc(body, [topLevelKey, serverName], entry, {
+  const edits = modifyJsonc(body, serverMapPath(topLevelKey, subKey, serverName), entry, {
     formattingOptions: { ...detectJsonIndent(body), eol },
   });
   const newText = `${hasBom ? '\uFEFF' : ''}${applyJsoncEdits(body, edits)}`;
@@ -203,6 +234,7 @@ function upsertJsonMcpConfig(
   }
   return { kind: entryExists ? 'overwritten' : 'written' };
 }
+
 
 type TomlUpsertOutcome =
   | { kind: 'written' | 'overwritten' }
@@ -261,6 +293,7 @@ function upsertTomlMcpConfig(
   }
   return { kind: result.existed ? 'overwritten' : 'written' };
 }
+
 
 type McpScope = 'user' | 'project' | 'both';
 
@@ -348,6 +381,7 @@ export async function resolveSharingMode(opts: {
   const prompt = opts.promptFn ?? promptSharingMode;
   return prompt(seed);
 }
+
 
 export interface EditorMcpResult {
   editorId: EditorId;
@@ -475,6 +509,7 @@ export type SharingOutcome =
       localOnlyRequested: boolean;
     };
 
+
 const LAUNCH_JSON_VERSION = '0.0.1';
 export const LAUNCH_CONFIG_NAME = 'open-knowledge-ui';
 
@@ -582,6 +617,7 @@ exec node "${resolveDevCliDistPath()}" start --ui-port "$UIPORT"`;
   }
 }
 
+
 function isEditorTargetAvailable(target: EditorMcpTarget, cwd: string, home?: string): boolean {
   try {
     const probePath = target.detectPath?.(cwd, home) ?? dirname(target.configPath(cwd, home));
@@ -613,11 +649,9 @@ export function writeEditorMcpConfig(
     };
   }
 
-  if (
-    !configPathOverride &&
-    !installOptions.skipAvailabilityCheck &&
-    !isEditorTargetAvailable(target, cwd, home)
-  ) {
+  const enforceAvailability =
+    !installOptions.skipAvailabilityCheck || target.offerOnlyWhenDetected === true;
+  if (!configPathOverride && enforceAvailability && !isEditorTargetAvailable(target, cwd, home)) {
     return {
       editorId: target.id,
       label: target.label,
@@ -695,7 +729,13 @@ export function writeEditorMcpConfig(
           if (tomlOutcome.kind === 'declined') captured.declineReason = tomlOutcome.reason;
           return;
         }
-        const outcome = upsertJsonMcpConfig(writePath, target.topLevelKey, serverName, targetEntry);
+        const outcome = upsertJsonMcpConfig(
+          writePath,
+          target.topLevelKey,
+          serverName,
+          targetEntry,
+          target.serverMapSubKey,
+        );
         captured.action = outcome.kind;
         if (outcome.kind === 'declined') captured.declineReason = outcome.reason;
       },
@@ -754,6 +794,7 @@ function collectProjectConfig(
   };
 }
 
+
 export interface UserMcpConfigsOptions {
   editors: EditorId[];
   home?: string;
@@ -794,8 +835,9 @@ function classifyContainer(
   config: Record<string, unknown>,
   topLevelKey: string,
   serverName: string,
+  subKey?: string,
 ): McpEntryClassification {
-  const servers = config[topLevelKey];
+  const servers = readServerContainer(config, topLevelKey, subKey);
   if (!isObject(servers)) return { kind: 'no-entry' };
   const existing = servers[serverName];
   if (!isObject(existing)) return { kind: 'no-entry' };
@@ -843,7 +885,7 @@ export function classifyExistingMcpEntry(
     } catch {
       return { kind: 'decline', reason: 'unparseable' };
     }
-    return classifyContainer(config, target.topLevelKey, serverName);
+    return classifyContainer(config, target.topLevelKey, serverName, target.serverMapSubKey);
   }
 
   const tree = parseJsoncObjectTree(raw);
@@ -855,8 +897,10 @@ export function classifyExistingMcpEntry(
     getNodeValue(tree) as Record<string, unknown>,
     target.topLevelKey,
     serverName,
+    target.serverMapSubKey,
   );
 }
+
 
 export async function runInit(options: InitCommandOptions = {}): Promise<InitCommandResult> {
   const cwd = resolve(options.cwd ?? process.cwd());
@@ -956,7 +1000,8 @@ export async function runInit(options: InitCommandOptions = {}): Promise<InitCom
       let configPath = '';
       try {
         configPath = target.configPath(projectRoot, options.home);
-      } catch {}
+      } catch {
+      }
       editorResults.push({
         editorId: target.id,
         label: target.label,
@@ -1009,6 +1054,7 @@ export async function runInit(options: InitCommandOptions = {}): Promise<InitCom
   const hasClaude = availableTargets.some((target) => target.id === 'claude');
   const launchJson =
     hasClaude && !skipMcp ? scaffoldLaunchJson(projectRoot, installOptions) : undefined;
+
 
   const installSkill = options.installUserSkill ?? installUserSkill;
   const skillInstall = await installSkill({ home: options.home });
@@ -1140,6 +1186,7 @@ function summarizeApplied(
     removed: result.removed,
   };
 }
+
 
 function declineReasonLabel(reason: McpDeclineReason | undefined): string {
   switch (reason) {
@@ -1324,6 +1371,7 @@ export function formatInitResult(result: InitCommandResult, cwd: string): string
     );
   }
 
+
   if (result.skillInstall) {
     lines.push('');
     lines.push(accent('User-global skill:'));
@@ -1346,6 +1394,7 @@ export function formatInitResult(result: InitCommandResult, cwd: string): string
         break;
     }
   }
+
 
   if (
     result.contentDirRequested !== undefined &&
@@ -1476,6 +1525,7 @@ export function buildInitJsonSummary(
     })),
   };
 }
+
 
 export function detectInstalledEditors(cwd: string, home?: string): EditorId[] {
   const detected: EditorId[] = [];
@@ -1635,6 +1685,7 @@ export function initCommand(): Command {
       },
     );
 }
+
 
 export function formatSharingOutcome(outcome: SharingOutcome, cwd: string): string[] {
   const lines: string[] = [];
