@@ -689,6 +689,85 @@ describe('persistence extension dispatch — config-doc integration', () => {
     expect(readFileSync(path, 'utf-8')).toBe('mcp:\n  autoStart: false\n');
   });
 
+  test('throwing onConfigPersisted does not surface as a store failure; persist still lands on disk', async () => {
+    // The persist already succeeded by the time onConfigPersisted fires — a
+    // throwing consumer-notify callback must not propagate into Hocuspocus's
+    // onStoreDocument lifecycle (it would misreport a durable write as a
+    // store failure).
+    const { createPersistenceExtension } = await import('./persistence.ts');
+    const notified: string[] = [];
+
+    const handle = createPersistenceExtension({
+      contentDir: fx.projectDir,
+      projectDir: fx.projectDir,
+      gitEnabled: false,
+      configHomedirOverride: fx.homedir,
+      onConfigPersisted: (docName) => {
+        notified.push(docName);
+        throw new Error('consumer notify failed');
+      },
+    });
+
+    const document = new Y.Doc();
+    document.getText('source').insert(0, 'mcp:\n  autoStart: false\n');
+
+    // The await resolving IS the assertion that no exception escapes the hook.
+    await handle.extension.onStoreDocument?.({
+      document,
+      documentName: CONFIG_DOC_NAME_PROJECT,
+      lastTransactionOrigin: undefined,
+      // biome-ignore lint/suspicious/noExplicitAny: minimal Hocuspocus shim
+    } as any);
+
+    // The callback DID fire with the right docName — the isolation assertion
+    // above can't pass vacuously via a never-invoked callback.
+    expect(notified).toEqual([CONFIG_DOC_NAME_PROJECT]);
+    // And the persist itself succeeded: config content landed on disk.
+    const path = configDocAbsPath(CONFIG_DOC_NAME_PROJECT, fx.ctx);
+    expect(readFileSync(path, 'utf-8')).toBe('mcp:\n  autoStart: false\n');
+  });
+
+  test('onConfigPersisted fires only on durable outcomes — a no-op store does not notify', async () => {
+    // The callback's contract is "a validated config value just reached durable
+    // state". A store whose content matches LKG returns 'no-op' without
+    // touching disk; notifying consumers there would widen the contract to
+    // "every store attempt" (spurious re-applies + log noise).
+    const { createPersistenceExtension } = await import('./persistence.ts');
+    const notified: string[] = [];
+
+    const handle = createPersistenceExtension({
+      contentDir: fx.projectDir,
+      projectDir: fx.projectDir,
+      gitEnabled: false,
+      configHomedirOverride: fx.homedir,
+      onConfigPersisted: (docName) => {
+        notified.push(docName);
+      },
+    });
+
+    const document = new Y.Doc();
+    document.getText('source').insert(0, 'mcp:\n  autoStart: false\n');
+
+    // First store: durable write ('persisted') — notifies once and sets LKG.
+    await handle.extension.onStoreDocument?.({
+      document,
+      documentName: CONFIG_DOC_NAME_PROJECT,
+      lastTransactionOrigin: undefined,
+      // biome-ignore lint/suspicious/noExplicitAny: minimal Hocuspocus shim
+    } as any);
+    expect(notified).toEqual([CONFIG_DOC_NAME_PROJECT]);
+
+    // Second store with unchanged content: LKG equality short-circuits to
+    // 'no-op' — consumers must NOT be re-notified.
+    await handle.extension.onStoreDocument?.({
+      document,
+      documentName: CONFIG_DOC_NAME_PROJECT,
+      lastTransactionOrigin: undefined,
+      // biome-ignore lint/suspicious/noExplicitAny: minimal Hocuspocus shim
+    } as any);
+    expect(notified).toEqual([CONFIG_DOC_NAME_PROJECT]);
+  });
+
   test('config-doc onStoreDocument fires onConfigRejected callback through ctx', async () => {
     const { createPersistenceExtension } = await import('./persistence.ts');
     const rejections: Array<{ docName: string; error: ConfigValidationError }> = [];

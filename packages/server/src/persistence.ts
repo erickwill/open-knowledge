@@ -346,6 +346,16 @@ export interface PersistenceOptions {
    */
   onConfigRejected?: (docName: string, error: ConfigValidationError) => void;
   /**
+   * Fired after the L3 persistence hook durably persists (or reconciles)
+   * a config doc on the self-originated Y.Doc path. Wired in boot to
+   * re-apply the now-durable config to the live in-process consumers (sync
+   * engine, semantic search) directly — either the value this persist wrote
+   * (`'persisted'`) or a winning external writer's value imported on reconcile
+   * (`'reconciled'`) — so it reaches them even when the chokidar echo never
+   * fires. Omitted in plugin mode.
+   */
+  onConfigPersisted?: (docName: string) => void;
+  /**
    * MarkdownManager instance used by `storeDocumentNow`'s pre-write
    * sanity check (`fragmentBody = mgr.serialize(json)`). Defaults to
    * the production singleton from `./md-manager.ts`. Tests inject a
@@ -631,6 +641,7 @@ export function createPersistenceExtension(options?: PersistenceOptions): Persis
   const onAgentCommit = options?.onAgentCommit;
   const onFlushCommit = options?.onFlushCommit;
   const onDiskFlush = options?.onDiskFlush;
+  const onConfigPersisted = options?.onConfigPersisted;
   // Per-instance MarkdownManager seam used by `storeDocumentNow`'s pre-write
   // sanity check. Defaults to the production singleton. Tests inject a
   // dedicated `new MarkdownManager({ extensions: sharedExtensions })` so the
@@ -2180,7 +2191,26 @@ export function createPersistenceExtension(options?: PersistenceOptions): Persis
     }) {
       if (isSystemDoc(documentName)) return;
       if (isConfigDoc(documentName)) {
-        await storeConfigDoc(document, documentName, lastTransactionOrigin, configPersistenceCtx);
+        const outcome = await storeConfigDoc(
+          document,
+          documentName,
+          lastTransactionOrigin,
+          configPersistenceCtx,
+        );
+        // A validated config value just reached durable state — either written
+        // by this persist (`'persisted'`) or imported from a winning external
+        // writer on reconcile (`'reconciled'`). Notify live in-process consumers
+        // directly; the chokidar echo is a non-guaranteed, OS-mediated
+        // filesystem-event channel that can drop this event (permanent
+        // divergence until restart). The persist already succeeded, so a
+        // consumer-notify throw must not surface as a store failure.
+        if (outcome === 'persisted' || outcome === 'reconciled') {
+          try {
+            onConfigPersisted?.(documentName);
+          } catch (err) {
+            log.warn({ err, documentName }, '[persistence] onConfigPersisted callback failed');
+          }
+        }
         return;
       }
       if (isManagedArtifactDoc(documentName)) {

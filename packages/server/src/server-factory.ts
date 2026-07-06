@@ -505,6 +505,56 @@ export function createServer(options: ServerOptions): ServerInstance {
     return `${normalizeProviderId(cfg.baseUrl)}|${cfg.model}|${cfg.dimensions ?? DEFAULT_EMBEDDINGS_DIMENSIONS}`;
   }
 
+  // Re-apply a just-persisted config to the live in-process consumers by
+  // re-reading it fresh from disk. Shared by two entry points: the producer-side
+  // `onConfigPersisted` notification (self-originated Y.Doc writes) and the
+  // config-file-watcher callback (genuinely external edits). The producer path is
+  // load-bearing because the chokidar echo is a non-guaranteed, OS-mediated
+  // filesystem-event channel — a dropped event otherwise leaves a consumer
+  // diverged from disk until restart. Hoisted so `onConfigPersisted` can
+  // reference it before `syncEngine` is assigned; both consumers resolve at call
+  // time (persist time), always after their assignment.
+  //
+  // Both entry points can fire for the same change (producer notify + watcher
+  // echo), so every consumer notified here MUST be idempotent on a same-value
+  // re-apply: `SyncEngine.setEnabled` and `SemanticSearchService.applyConfig`
+  // both early-return when the value is unchanged. A future non-idempotent
+  // consumer added here would double-fire.
+  function applyPersistedConfigToConsumers(configDocName: string): void {
+    let appliedAutoSyncEnabled: boolean | undefined;
+    if (
+      configDocName === CONFIG_DOC_NAME_PROJECT ||
+      configDocName === CONFIG_DOC_NAME_PROJECT_LOCAL
+    ) {
+      appliedAutoSyncEnabled = readProjectAutoSyncEnabled();
+      void syncEngine?.setEnabled(appliedAutoSyncEnabled).catch((err) => {
+        log.warn(
+          { err, enabled: appliedAutoSyncEnabled, docName: configDocName },
+          '[sync] failed to apply autoSync.enabled from config',
+        );
+      });
+    }
+    // Re-evaluate semantic search on every config-doc store. `readSemanticSearchConfig`
+    // resolves the project-local layer only, so only a project-local `search.semantic.*`
+    // edit changes the result; other layers re-read to the same value (a no-op via
+    // `applyConfig`'s early-return). A live disable frees the resident vectors; a
+    // provider/model/dims change re-warms. No eager embed — the next opt-in search
+    // drives the corpus pass.
+    const semCfg = readSemanticSearchConfig();
+    semanticSearch.applyConfig({
+      enabled: semCfg.enabled,
+      providerFingerprint: semanticProviderFingerprint(semCfg),
+    });
+    log.info(
+      {
+        docName: configDocName,
+        autoSyncEnabled: appliedAutoSyncEnabled,
+        semanticEnabled: semCfg.enabled,
+      },
+      '[config] applied persisted config to in-process consumers',
+    );
+  }
+
   // Initialize OpenTelemetry before any spans could be emitted. No-op when
   // OTEL_SDK_DISABLED != 'false' (default — zero overhead). Idempotent; safe
   // to call multiple times (bootServer also calls it, but dev-plugin path
@@ -914,6 +964,12 @@ export function createServer(options: ServerOptions): ServerInstance {
       // pattern.
       onConfigRejected: (docName, error) =>
         cc1Broadcaster?.emitConfigValidationRejected(docName, error),
+      // Producer-side hot-apply. Fired when the config-doc branch durably
+      // persists (or reconciles) a self-originated change; re-applies it to the
+      // live consumers directly so a dropped chokidar echo can't strand them.
+      // Closure-deferred: `syncEngine`/`semanticSearch` resolve at call time,
+      // always after their assignment.
+      onConfigPersisted: applyPersistedConfigToConsumers,
       mdManager: options.mdManager,
     };
 
@@ -2668,24 +2724,7 @@ export function createServer(options: ServerOptions): ServerInstance {
             { docName: configDocName, outcome },
             '[config-file-watcher] applyExternalConfigChange outcome',
           );
-          if (
-            configDocName === CONFIG_DOC_NAME_PROJECT ||
-            configDocName === CONFIG_DOC_NAME_PROJECT_LOCAL
-          ) {
-            const enabled = readProjectAutoSyncEnabled();
-            void syncEngine?.setEnabled(enabled).catch((err) => {
-              log.warn({ err, enabled }, '[sync] failed to apply autoSync.enabled from config');
-            });
-          }
-          // Re-evaluate semantic search on ANY config-layer change (project-local
-          // / project / user can all carry `search.semantic.*`). A live disable
-          // frees the resident vectors; a provider/model/dims change re-warms.
-          // No eager embed — the next opt-in search drives the corpus pass.
-          const semCfg = readSemanticSearchConfig();
-          semanticSearch.applyConfig({
-            enabled: semCfg.enabled,
-            providerFingerprint: semanticProviderFingerprint(semCfg),
-          });
+          applyPersistedConfigToConsumers(configDocName);
         });
         configFileWatcherCleanups.push({ docName: configDocName, cleanup });
         log.info({ docName: configDocName, path: absPath }, '[config-file-watcher] started');
