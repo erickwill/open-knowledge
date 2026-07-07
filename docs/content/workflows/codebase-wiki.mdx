@@ -63,7 +63,7 @@ You don't configure the wiki in a settings file — you say what you want in pla
 
 | Knob | Values | Default | What it changes |
 | --- | --- | --- | --- |
-| **audience** | `internal`, `public` | `internal` | `public` means polished prose, no secrets or internal infra or ticket numbers, and GitHub-URL source references instead of relative paths |
+| **audience** | `internal`, `public` | `internal` | `public` means polished prose, no secrets or internal infra or ticket numbers, and GitHub-URL source references when the repo has a remote (relative paths otherwise) |
 | **depth** | `tour`, `standard`, `exhaustive` | `standard` | Scales coverage from OVERVIEW + architecture + top flows, up through per-package module pages, concepts, and task guides |
 
 So "build the wiki, public and exhaustive" and "just give me a quick internal tour" produce very different artifacts from the same pack.
@@ -74,7 +74,7 @@ You've inherited a 200-file TypeScript service and have to add a feature this we
 
 <CopyPrompt>Build a codebase wiki for this repo. Internal audience, standard depth.</CopyPrompt>
 
-The agent surveys the repo, writes `OVERVIEW.md` with a top-level architecture diagram, then fills `architecture/`, `modules/`, `flows/`, and `concepts/` — each page carrying a mermaid diagram and links to the specific files it read. An hour later you open `flows/request-lifecycle.md`, see the sequence diagram, follow the link into `modules/auth.md`, and know exactly where your feature slots in. Next week, after you've merged, `refresh` updates only the pages your diff touched.
+The agent surveys the repo, confirms its proposed page list with you, writes `OVERVIEW.md` with a top-level architecture diagram, then fills `architecture/`, `modules/`, `flows/`, and `concepts/` — architecture and flow pages carrying mermaid diagrams, every page linking to the specific files it read. An hour later you open `flows/request-lifecycle.md`, see the sequence diagram, follow the link into `modules/auth.md`, and know exactly where your feature slots in. Next week, after you've merged, `refresh` updates only the pages your diff touched.
 
 ## What's in your project after seeding
 
@@ -87,7 +87,7 @@ ok seed --pack codebase-wiki
 The pack scaffolds the `wiki/` tree above with a stubbed `OVERVIEW.md` (empty `source_commit`), a starter template per section (`architecture-page`, `module-page`, `flow-page`, `concept-page`, `guide-page`), and `wiki/log.md`. Each folder's `.ok/frontmatter.yml` teaches the agent that section's job, so guidance lives next to the action rather than inside every page.
 
 <Callout type="info" title="Seeding also installs a skill">
-  `ok seed --pack codebase-wiki` installs the **Codebase wiki** project skill into your agent editors (Claude Code, Cursor, Codex, OpenCode). It's the "how to work here" guidance behind the generate / refresh procedure, the audience and depth knobs, and the source-reference discipline — read automatically, and editable like any other doc. It lands as a real `SKILL.md` committed to your repo, one per detected editor. See [Skills](../features/skills.mdx) and [what OpenKnowledge writes to disk](../reference/what-open-knowledge-writes.mdx).
+  `ok seed --pack codebase-wiki` installs the **Codebase wiki** project skill into your agent editors (Claude Code, Cursor, Codex, OpenCode). It's the "how to work here" guidance behind the generate / refresh procedure, the audience and depth knobs, and the source-reference discipline — read automatically, and editable like any other doc. It lands as a real `SKILL.md` committed to your repo — one source under `.ok/skills/`, symlinked into each detected editor's skills directory. See [Skills](../features/skills.mdx) and [what OpenKnowledge writes to disk](../reference/what-open-knowledge-writes.mdx).
 </Callout>
 
 ## Generate, then refresh
@@ -102,7 +102,7 @@ To update it later, once it exists:
 
 Either prompt works — the pack auto-detects which mode to run from `source_commit` in `OVERVIEW.md`:
 
-- **Generate** (a stubbed `OVERVIEW.md`): survey → overview → architecture → modules → flows → concepts → a final link-graph audit that catches orphans and dead links.
+- **Generate** (a stubbed `OVERVIEW.md`): survey → overview → architecture → modules → flows → concepts → a final link-graph audit that catches orphans and dead links. It stops twice for your confirmation — first the knobs and coverage, then the proposed page list — before writing anything.
 - **Refresh** (a stamped `OVERVIEW.md`): diff the recorded `source_commit` against current `HEAD`, update only the affected pages, and re-stamp.
 
 `OVERVIEW.md` carries `source_commit` — the git commit the wiki was last built against. It's the freshness anchor: refresh diffs from it, so the wiki tracks the code instead of drifting into fiction.
@@ -116,7 +116,7 @@ Either prompt works — the pack auto-detects which mode to run from `source_com
 | When | Do |
 | --- | --- |
 | First arrival at a repo | Generate at `standard` depth; skim `OVERVIEW.md` and the architecture pages |
-| Onboarding someone | Point them at the wiki; regenerate at `exhaustive` if they need module-level depth |
+| Onboarding someone | Point them at the wiki; regenerate at `exhaustive` if they need sub-module pages, task guides, and per-flow failure modes |
 | After a significant merge | Refresh — the agent updates only the pages the diff touched and re-stamps `source_commit` |
 | Going public | Regenerate with `audience: public` for GitHub-linked, secret-free prose |
 

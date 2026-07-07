@@ -18,11 +18,15 @@ Timeline entries include:
 - **Upstream sync** entries from Git
 - **File system** changes made outside of OpenKnowledge
 
+Project-wide checkpoints saved by agents via the [`checkpoint` MCP tool](/docs/reference/mcp#tools) do not appear on the timeline; agents find and restore them with the `history` and `restore_version` tools.
+
+The timeline is per branch: it shows the branch's own edits, plus history from before the branch diverged from `main`. History is stored in a shadow git repo inside your project, so entries and attribution survive app restarts and agent sessions — see [Attribution and collaboration](/docs/reference/core-concepts#attribution-and-collaboration).
+
 ## Review changes
 
-Click a timeline entry to expand it. OpenKnowledge shows an inline diff so you can compare that version with the current document. If that version is the same as the current document, you will see `no changes`.
+Click a timeline entry to expand it. OpenKnowledge shows an inline diff so you can compare that version with the current document. If that version has the same body as the current document ([properties](/docs/features/editor#properties) are not part of the diff), you will see `No changes`.
 
-You can switch between unified and split diff layouts from the editor controls.
+You can switch between unified and split diff layouts from the toggle at the top of the timeline panel (shown once the timeline has entries).
 
 ![An expanded timeline entry showing a split diff next to the document, with removed lines highlighted in red and added lines in green](/screenshots/timeline-diff-view.png)
 

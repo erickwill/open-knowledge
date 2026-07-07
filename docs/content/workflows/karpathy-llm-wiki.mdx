@@ -65,7 +65,7 @@ Either way, by the end of this guide you'll have a working source-grounded knowl
 You need:
 
 - **The OpenKnowledge desktop app.** The native macOS app is the canonical surface: WYSIWYG editor, file sidebar, agent activity panel, version timeline, and the starter-pack picker all live there. Install it from the [Quickstart](../get-started/quickstart.mdx).
-- **An MCP-capable agent assistant.** [Claude Code](../integrations/claude-code.mdx), [Cursor](../integrations/cursor.mdx), [Codex](../integrations/codex.mdx), or [OpenCode](../integrations/opencode.mdx). The OK desktop app's first-launch flow detects them and wires them up.
+- **An MCP-capable agent assistant.** [Claude Code](../integrations/claude-code.mdx), [Cursor](../integrations/cursor.mdx), [Codex](../integrations/codex.mdx), [OpenCode](../integrations/opencode.mdx), or [OpenClaw](../integrations/openclaw.mdx). The OK desktop app's first-launch flow detects them and wires them up.
 - **A read of the source pattern.** Andrej Karpathy's [LLM wiki gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) is the canonical description of what we're implementing here. It's a 10-minute read and worth doing first; this guide builds on it directly.
 
 If you're brand new to OK, run the [Quickstart](../get-started/quickstart.mdx) (≤5 minutes to first agent-driven edit) and come back here.
@@ -100,9 +100,9 @@ your-project/
 └── log.md                     (append-only audit trail)
 ```
 
-- **`external-sources/`.** Five `.md` files, each carrying the verbatim source text plus YAML frontmatter with the original URL, fetch date, and author metadata. *Immutable* after capture. The agent reads these but never edits them. (Karpathy's gist calls this folder `raw/`; OK's pack ships it as `external-sources/` for clearer intent.)
+- **`external-sources/`.** Five `.md` files, each carrying the verbatim source text plus YAML frontmatter with the original URL, fetch date, and author metadata. *Immutable* after capture. The agent reads these but never edits them. (This is Karpathy's raw-sources layer; his gist leaves the folder name open.)
 - **`research/`.** One provisional article synthesizing the five sources into an evaluation. Every claim cites a specific path in `external-sources/`. Status: `provisional` (you can change it).
-- **`articles/`.** Still empty. You consolidate to here only when you've actually decided (e.g., "yes we're adopting this framework"). Premature consolidation is how wikis go stale. (Karpathy's gist puts both provisional and canonical pages in a single `wiki/` folder; OK splits them so the promotion step is explicit.)
+- **`articles/`.** Still empty. You consolidate to here only when you've actually decided (e.g., "yes we're adopting this framework"). Premature consolidation is how wikis go stale. (Karpathy's gist puts both provisional and canonical pages in a single wiki layer; OK splits them so the promotion step is explicit.)
 - **`log.md`.** One append-only file at project root recording each ingest, research pass, and consolidation. The audit trail. (Direct from Karpathy's pattern.)
 
 ## The workflow behind it
@@ -111,8 +111,8 @@ Karpathy's pattern, summarized from the [gist](https://gist.github.com/karpathy/
 
 | Element | What it is | Karpathy's filenames |
 |---|---|---|
-| **Raw sources** | Immutable collection of the actual documents (articles, papers, repo READMEs, transcripts). The LLM reads but does not modify. | `raw/` (with `raw/assets/` for attachments) |
-| **The wiki** | LLM-generated markdown files: summaries, entity pages, concept pages, cross-references. Single layer; the LLM owns it entirely. | `wiki/` |
+| **Raw sources** | Immutable collection of the actual documents (articles, papers, repo READMEs, transcripts). The LLM reads but does not modify. | left open (`raw/assets/` appears only as an example attachment path) |
+| **The wiki** | LLM-generated markdown files: summaries, entity pages, concept pages, cross-references. Single layer; the LLM owns it entirely. | left open |
 | **The log** | Append-only record of ingests, queries, lint passes: *"what happened and when."* | `log.md` |
 | **The index** | Content-oriented catalog listing every page with link, summary, optional metadata. | `index.md` |
 | **The schema** | Config document telling the LLM how the wiki is structured. | `CLAUDE.md` (Claude Code) or `AGENTS.md` (other hosts) |
@@ -134,12 +134,12 @@ The **Knowledge base** pack scaffolds Karpathy's pattern with one significant ad
 
 | Karpathy | OpenKnowledge |
 |---|---|
-| `raw/` (verbatim sources, immutable) | `external-sources/` (OK's name; same role) + `clip` template + `ingest` workflow |
-| `wiki/` (single LLM-owned layer) | **Split**: `research/` (provisional, status:`provisional`, sources cited) + `articles/` (canonical, status:`canonical`, supersedes chain); `consolidate` promotes |
+| Raw sources (verbatim, immutable) | `external-sources/` + `clip` template + `ingest` workflow |
+| The wiki (single LLM-owned layer) | **Split**: `research/` (provisional, status:`provisional`, sources cited) + `articles/` (canonical, status:`canonical`, supersedes chain); `consolidate` promotes |
 | `log.md` (append-only record) | `log.md` at project root, written by the pack |
 | `index.md` (static content catalog) | Provided dynamically via `exec` (`ls`) + the file sidebar. The agent reads folder frontmatter + per-doc metadata on every list call, so a static index isn't required. You can still hand-write `index.md` if you prefer. |
 | `CLAUDE.md` / `AGENTS.md` (centralized schema) | `<folder>/.ok/frontmatter.yml` + per-folder templates; schema lives next to the action |
-| LLM agent | [Claude Code](../integrations/claude-code.mdx), [Cursor](../integrations/cursor.mdx), [Codex](../integrations/codex.mdx), [OpenCode](../integrations/opencode.mdx) |
+| LLM agent | [Claude Code](../integrations/claude-code.mdx), [Cursor](../integrations/cursor.mdx), [Codex](../integrations/codex.mdx), [OpenCode](../integrations/opencode.mdx), [OpenClaw](../integrations/openclaw.mdx) |
 
 When your agent lists `external-sources/`, it reads the folder description telling it to ingest verbatim and *not* analyze in those files. That's the schema layer doing its job, without you hand-writing a `CLAUDE.md` from scratch.
 
@@ -147,25 +147,25 @@ When your agent lists `external-sources/`, it reads the folder description telli
 
 ### 1. Open the desktop app and pick a project folder
 
-Launch **OpenKnowledge** (the macOS app). Either drag-and-drop a folder, open one from **Pick Existing Project**, or click **Start Fresh** to create a new vault. The first-launch consent dialog scaffolds `.ok/` and offers to wire up any MCP-capable editors it detects (Claude Code, Cursor, Codex, OpenCode).
+Launch **OpenKnowledge** (the macOS app). Either drag-and-drop a folder, click **Open folder on disk**, or click **Create new project** to start a new vault. The first-launch consent dialog scaffolds `.ok/` and offers to wire up any MCP-capable editors it detects (Claude Code, Cursor, Codex, OpenCode, OpenClaw).
 
 Don't have the desktop app yet? See the [Quickstart](../get-started/quickstart.mdx).
 
 ### 2. Initialize the Knowledge base starter pack
 
-In the editor, on a fresh project, click the empty-state **Pick a starter pack** button → select **Knowledge base** → confirm the subfolder (leave blank for project-root, or use something like `brain/` to nest the layers). Apply.
+In the editor, on a fresh project, click the **Knowledge base** card in the empty state, leave **Project root** selected (or choose **In a subfolder** to nest the layers under something like `brain/`), and click **Initialize**. On a project with existing documents, the same flow starts from the **Add a starter pack** button.
 
-You'll get `external-sources/`, `research/`, `articles/`, the three matching templates, and `log.md` at the chosen root. The folders carry descriptions written *for the agent*; see them in the file sidebar's folder tooltips, and in any `exec` directory listing from an agent.
+You'll get `external-sources/`, `research/`, `articles/`, the three matching templates, and `log.md` at the chosen root. The folders carry descriptions written *for the agent*; see them on the folder's overview page (click the folder in the sidebar), and in any `exec` directory listing from an agent.
 
 The starter-pack picker is idempotent (safe to re-run on the same project).
 
 <Callout type="info" title="Seeding also installs a skill">
-  `ok seed --pack knowledge-base` (or the desktop starter-pack picker) installs the **Knowledge base** project skill into your agent editors (Claude Code, Cursor, Codex, OpenCode). It's the "how to work here" guidance behind the layer discipline described below — the `ingest` / `research` / `consolidate` conventions and the provisional-to-canonical promotion — read automatically, and editable like any other doc. It lands as a real `SKILL.md` committed to your repo, one per detected editor. See [Skills](../features/skills.mdx) and [what OpenKnowledge writes to disk](../reference/what-open-knowledge-writes.mdx).
+  `ok seed --pack knowledge-base` (or the desktop starter-pack picker) installs the **Knowledge base** project skill into your agent editors (Claude Code, Cursor, Codex, OpenCode). It's the "how to work here" guidance behind the layer discipline described below — the `ingest` / `research` / `consolidate` conventions and the provisional-to-canonical promotion — read automatically, and editable like any other doc. It lands as a single `SKILL.md` in your repo under `.ok/skills/`, symlinked into the skills folder of each editor already set up for the project. See [Skills](../features/skills.mdx) and [what OpenKnowledge writes to disk](../reference/what-open-knowledge-writes.mdx).
 </Callout>
 
 ### 3. Confirm your agent host is wired
 
-If you accepted the desktop app's first-launch offer to wire up your agent assistant, you're done. If not, in your agent assistant ([Claude Code](../integrations/claude-code.mdx), [Cursor](../integrations/cursor.mdx), or [Codex](../integrations/codex.mdx)), ask:
+If you accepted the desktop app's first-launch offer to wire up your agent assistant, you're done. If not, in your agent assistant, ask:
 
 <CopyPrompt>list the workflow tools available</CopyPrompt>
 
@@ -201,9 +201,9 @@ The agent reads `research/agent-framework-evaluation.md` first, follows the cita
 
 The pack doesn't just create three folders. It scaffolds the **agent-readable schema layer** that makes the LLM behave per Karpathy's conventions without you hand-writing a `CLAUDE.md`.
 
-Each folder gets a `.ok/frontmatter.yml` (the agent reads it on every `exec` directory listing) plus a `.ok/templates/<name>.md` (the agent picks it on every `write({ document: { template } })` call). `external-sources/.ok/frontmatter.yml`, for example, opens with:
+Each folder gets a `.ok/frontmatter.yml` (the agent reads it on every `exec` directory listing) plus a `.ok/templates/<name>.md` (the agent picks it on every `write({ document: { template } })` call). `external-sources/.ok/frontmatter.yml`, for example, carries this description:
 
-> Raw sources SAVED verbatim, not just cited. Produced by `ingest`... Immutable after capture. No analysis in these files; that belongs in `research/`.
+> Raw sources saved verbatim — the fetched text of URLs, extracted PDFs, and copied files, each with the original URL and access date in frontmatter. Produced by `ingest`. Immutable after capture; no analysis here (that goes in `research/`).
 
 Result: the agent learns each layer's discipline without a separate prompt or skills file. `research/` and `articles/` carry analogous descriptions. This is Karpathy's centralized `CLAUDE.md` schema, distributed per-folder, so schema lives closest to the agent action. Customize via `mcp__open-knowledge__edit` (with a `folder` target).
 
@@ -228,7 +228,7 @@ When to use each tool, and when *not* to:
 | You're synthesizing 2+ sources into an answer | `research` | Provisional article, citations required, status:provisional |
 | Team decided; this is the canonical position | `consolidate` | Writes status:canonical with supersedes chain |
 | You just want to write a note | `write` | Not every doc needs the workflow (scratch notes, project pages, runbooks) |
-| You ran a one-off query and the answer's useful | Save the chat to a new doc in `research/` | Per Karpathy: *"valuable query results become new wiki pages"*; don't let them die in chat history |
+| You ran a one-off query and the answer's useful | Save the chat to a new doc in `research/` | Per Karpathy, good answers get filed back into the wiki as new pages; don't let them die in chat history |
 
 **Anti-pattern: consolidating too early.** If you `consolidate` before the team has actually decided, you'll be rewriting canonical articles every week. Status `provisional` exists for a reason. Keep things in `research/` until decisions are real.
 
@@ -249,7 +249,7 @@ The compounding move: end each ingest session with one synthesis query. The answ
 
 - **Folder descriptions are agent-readable.** The pack writes `<folder>/.ok/frontmatter.yml` so the agent learns layer discipline on every `exec` directory listing, with no separate `CLAUDE.md`.
 - **`log.md` doubles as a journal.** Every `ingest` / `research` / `consolidate` lands there with timestamps. Underrated.
-- **`New from template…`** in the sidebar gives you the right frontmatter shape instantly. Don't hand-author.
+- **`New from template`** in the sidebar gives you the right frontmatter shape instantly. Don't hand-author.
 
 ## Looking for entity tracking instead?
 
@@ -264,7 +264,7 @@ This guide is the **source-grounded** posture: bring sources, the LLM curates th
 ### OpenKnowledge internals that support this workflow
 
 - **[Agent activity](../features/agent-activity.mdx).** How every agent edit lands in the shadow repo with attribution.
-- **[Claude Code](../integrations/claude-code.mdx)**, **[Cursor](../integrations/cursor.mdx)**, **[Codex](../integrations/codex.mdx)**, **[OpenCode](../integrations/opencode.mdx).** Agent-assistant integrations.
+- **[Claude Code](../integrations/claude-code.mdx)**, **[Cursor](../integrations/cursor.mdx)**, **[Codex](../integrations/codex.mdx)**, **[OpenCode](../integrations/opencode.mdx)**, **[OpenClaw](../integrations/openclaw.mdx).** Agent-assistant integrations.
 - **[`STARTER_PACKS` registry](https://github.com/inkeep/open-knowledge/blob/main/packages/server/src/seed/starter.ts).** Canonical source for the Knowledge base pack content.
 
 ### Adjacent OK workflow

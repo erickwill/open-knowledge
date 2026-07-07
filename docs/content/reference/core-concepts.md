@@ -57,10 +57,10 @@ if(!matchMedia("(prefers-reduced-motion:reduce)").matches){setInterval(function(
 ```
 
 <Cards>
-  <Card title="The editor" href="../features/editor.mdx">
+  <Card title="The editor" href="/docs/features/editor">
     The application you see: a beautiful, themeable markdown editor that renders rich extensions (Mermaid, LaTeX, video and asset embeds, callouts, collapsible sections, interactive HTML) and lets you read and write your knowledge base directly.
   </Card>
-  <Card title="The knowledge engine" href="./mcp.mdx">
+  <Card title="The knowledge engine" href="/docs/reference/mcp">
     The framework underneath: an MCP server that lets any AI agent read and write your knowledge base while keeping front matter consistent, references intact, and the link graph healthy.
   </Card>
   <Card title="The content" href="#the-file-system-is-the-database">
@@ -70,7 +70,7 @@ if(!matchMedia("(prefers-reduced-motion:reduce)").matches){setInterval(function(
 
 All three layers operate on the **same files**. You can edit through the editor, an agent can edit through the knowledge engine's MCP tools, and you can always drop down to any text editor and change the markdown by hand. Nothing locks you out.
 
-Because the knowledge engine is exposed over [MCP](https://modelcontextprotocol.io), it is **agent-agnostic**. Bring Claude Code, Cursor, Codex, OpenCode, Gemini, or any MCP-capable client, and any model you have access to.
+Because the knowledge engine is exposed over [MCP](https://modelcontextprotocol.io), it is **agent-agnostic**. Bring Claude Code, Cursor, Codex, OpenCode, OpenClaw, or any MCP-capable client, and any model you have access to.
 
 ## The file system is the database
 
@@ -231,5 +231,7 @@ That gives you:
 - **A changelog** of every edit across the knowledge base.
 - **Point-in-time history.** Revert to any earlier state.
 - **Per-author views.** See exactly what one human or one agent changed.
+
+Browse this history and restore earlier versions from the editor's [timeline](../features/timeline-and-recovery.mdx).
 
 Because humans and agents edit the same files through the same tracked layer, collaboration is a first-class property of the system rather than something bolted on.

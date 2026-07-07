@@ -1,14 +1,14 @@
 {
-  "title": "Workflows",
-  "icon": "LuWorkflow",
+  "title": "Use Cases",
+  "icon": "LuLightbulb",
   "pages": [
     "karpathy-llm-wiki",
     "codebase-wiki",
     "software-lifecycle",
-    "entity-vault",
     "writing-pipeline",
-    "supporting-open-knowledge-format",
+    "plain-notes",
     "worldbuilding",
-    "plain-notes"
+    "supporting-open-knowledge-format",
+    "entity-vault"
   ]
 }

@@ -161,9 +161,9 @@ describe('okf pack — OKF §9 conformance by construction', () => {
         true,
       );
       // §6 navigation is a link-list in STANDARD markdown — a conformant OKF
-      // bundle's links are plain markdown, not OK's `[[…]]` superset (which the
-      // OKF export normalizes away). Pin every seeded nav link's format so the
-      // graph stays portable to a strict consumer.
+      // bundle's links are plain markdown, not OK's `[[…]]` superset. Pin every
+      // seeded nav link's format so the graph stays portable to a strict
+      // consumer.
       for (const link of [
         '[welcome](./welcome.md)',
         '[concepts/](./concepts/)',

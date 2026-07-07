@@ -67,13 +67,13 @@ The agent stubs `characters/kael.md` linked to `factions/iron-pact.md` and `sett
 
 ## What's in your project after seeding
 
-Pick **Worldbuilding** in the starter-pack picker, or run:
+In an initialized project (`ok init`), pick **Worldbuilding** in the starter-pack picker, or run:
 
 ```bash
 ok seed --pack worldbuilding
 ```
 
-By default the pack nests under a `world/` subfolder:
+Pass `--root world` (or pick **In a subfolder** in the picker) to nest the pack under `world/`:
 
 ```
 your-project/
@@ -85,10 +85,10 @@ your-project/
     └── lore/
 ```
 
-Each folder's `.ok/frontmatter.yml` teaches the agent that entity type and its auto-stub / contradiction behavior, so the guidance never clutters the entries themselves.
+Each folder's `.ok/frontmatter.yml` teaches the agent that entity type and what belongs there, so the guidance never clutters the entries themselves.
 
 <Callout type="info" title="Seeding also installs a skill">
-  `ok seed --pack worldbuilding` installs the **Worldbuilding** project skill into your agent editors (Claude Code, Cursor, Codex, OpenCode). It's the "how to work here" guidance behind the auto-stub and contradiction-flagging behaviors — read automatically, and editable like any other doc. It lands as a real `SKILL.md` committed to your repo, one per detected editor. See [Skills](../features/skills.mdx) and [what OpenKnowledge writes to disk](../reference/what-open-knowledge-writes.mdx).
+  `ok seed --pack worldbuilding` installs the **Worldbuilding** project skill into your agent editors (Claude Code, Cursor, Codex, OpenCode). It's the "how to work here" guidance behind the auto-stub and contradiction-flagging behaviors — read automatically, and editable like any other doc. It lands as one real `SKILL.md` under `.ok/skills/`, committed to your repo and symlinked into each set-up editor's skills folder. See [Skills](../features/skills.mdx) and [what OpenKnowledge writes to disk](../reference/what-open-knowledge-writes.mdx).
 </Callout>
 
 ## Cadence
@@ -105,4 +105,4 @@ Each folder's `.ok/frontmatter.yml` teaches the agent that entity type and its a
 - **[LLM wiki workflow](./karpathy-llm-wiki.mdx).** The same wiki-graph discipline, aimed at real-world sources instead of a fictional world.
 - **[Entity vault workflow](./entity-vault.mdx).** The non-fiction sibling — track real people, companies, and meetings the same way you track characters and factions.
 - **[Core Concepts](../reference/core-concepts.md).** Links and backlinks — the connected graph you navigate the world through.
-- **[Claude Code](../integrations/claude-code.mdx)**, **[Cursor](../integrations/cursor.mdx)**, **[Codex](../integrations/codex.mdx).** MCP-capable agent hosts.
+- **[Claude Code](../integrations/claude-code.mdx)**, **[Cursor](../integrations/cursor.mdx)**, **[Codex](../integrations/codex.mdx)**, **[OpenCode](../integrations/opencode.mdx).** MCP-capable agent hosts.

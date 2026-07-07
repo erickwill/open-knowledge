@@ -28,7 +28,8 @@ Download the latest version of the OpenKnowledge desktop app for macOS.
 
 ### Create a new project
 
-- Open the OpenKnowledge app and click **Create new project**.
+- Open the OpenKnowledge app. On first launch, approve the **Add OpenKnowledge to your AI tools** dialog — it wires up your AI editors and can add the `ok` command to your terminal. If you skip it, re-open it later from **File → Set up OpenKnowledge integrations…**.
+- Click **Create new project**.
 - Type a name for your project (for example, *Team Wiki*).
 - Optionally click **Browse** to change where the project is saved, then click **Create**.
 
@@ -121,7 +122,7 @@ Install the CLI from npm, initialize a project, and start the editor in your bro
 npm install -g @inkeep/open-knowledge
 
 # Create (or enter) a project folder, then initialize a knowledge base.
-# `ok init` scaffolds .ok/ and wires up Claude Code, Cursor, Codex, and OpenCode.
+# `ok init` scaffolds .ok/ and wires up Claude Code, Claude Desktop, Cursor, Codex, OpenCode, and OpenClaw.
 mkdir my-knowledge-base && cd my-knowledge-base
 ok init
 
@@ -139,7 +140,7 @@ ok start --open
 
 ### Open the knowledge base in your AI agent
 
-`ok init` already registered OpenKnowledge with the AI editors it could configure, so your agent can use the OpenKnowledge tools right away. Open your project in your agent — or, from the editor, right-click the project in the sidebar, choose **Open with AI ▸**, and pick one. (The bottom **Ask AI** field is available in the desktop app only.) If a tool's MCP entry didn't appear, see [registration outcomes](/docs/reference/cli#set-up-a-project).
+`ok init` already registered OpenKnowledge with the AI editors it could configure, so your agent can use the OpenKnowledge tools right away. Open your project in your agent — or, from the editor, right-click the project in the sidebar, choose **Open with AI ▸**, and pick one. (With a document open, the bottom **Ask AI** field hands a prompt to your agent too.) If a tool's MCP entry didn't appear, see [registration outcomes](/docs/reference/cli#set-up-a-project).
 
 In the agent's chat window, add the following to get started or use a topic of your choice:
 

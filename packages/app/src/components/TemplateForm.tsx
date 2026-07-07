@@ -213,7 +213,7 @@ export interface TemplateFormState {
 
 /**
  * State + submit logic for the template create/edit form. The user fills one
- * `Name` field; the filename `slug` is derived from it until the user takes
+ * `Title` field; the filename `slug` is derived from it until the user takes
  * manual control via the `Edit` affordance, after which the two decouple.
  *
  * Rendering is `TemplateFormFields` — split out so the create and edit dialogs
@@ -362,7 +362,7 @@ export function useTemplateForm({
 }
 
 /**
- * Renders the template form's fields: the `Name` field (with the derived,
+ * Renders the template form's fields: the `Title` field (with the derived,
  * overridable filename beneath it), `Description`, and the body.
  */
 export function TemplateFormFields({
@@ -428,7 +428,7 @@ export function TemplateFormFields({
           id={descriptionId}
           value={form.description}
           onChange={(e) => form.setDescription(e.target.value)}
-          placeholder={t`A short line shown under the name in the template list.`}
+          placeholder={t`A short line shown under the title in the template list.`}
           disabled={form.isSaving}
           rows={2}
         />
@@ -539,7 +539,7 @@ function TemplateDefaultProperties({ form }: { form: TemplateFormState }) {
 }
 
 /**
- * The filename line beneath the `Name` field (create mode). Collapsed, it
+ * The filename line beneath the `Title` field (create mode). Collapsed, it
  * shows the derived `<slug>.md` with an `Edit` affordance; expanded — or when
  * the derived slug is unusable — it shows the editable filename input.
  */
@@ -606,7 +606,7 @@ function DerivedFilename({ form }: { form: TemplateFormState }) {
         </FieldDescription>
       ) : (
         <FieldDescription>
-          <Trans>The file on disk, and the id agents use. It can't be changed later.</Trans>
+          <Trans>The file on disk, and the id agents use.</Trans>
         </FieldDescription>
       )}
     </Field>

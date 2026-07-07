@@ -8,7 +8,7 @@ Agent activity shows all edits made by an agent during its current editing sessi
 
 ## Open agent activity
 
-Avatar icons will appear in the top right of the editor whenever an agent or a human is editing a document. You can click on an agent's avatar icon to open the activity panel for that agent.
+Avatar icons will appear in the top right of the editor whenever an agent or a human has the document open. Agents working in other documents appear in an adjacent group. You can click on any agent's avatar icon to open the activity panel for that agent.
 
 The activity panel displays the list of files that the agent has edited in the current session.
 
@@ -25,4 +25,8 @@ While an agent's session is still active, you can undo:
 - The agent's latest edit in a file
 - All edits made by an agent in a file at once
 
-After the agent session ends, the activity panel still shows the session's edits for review, but undo is no longer available. Use the [timeline](/docs/features/timeline-and-recovery) to roll back changes from a closed session.
+Activity history lives only as long as the agent's session: shortly after the agent disconnects, the panel and the agent's avatar clear. Use the [timeline](/docs/features/timeline-and-recovery) to review and roll back changes from a closed session.
+
+## How attribution works
+
+Every edit is attributed to its author — a specific agent, you, an upstream Git sync, or the file system — and recorded in a local edit history. The activity panel is a live view of a single agent session; the timeline is the durable record of who changed what.

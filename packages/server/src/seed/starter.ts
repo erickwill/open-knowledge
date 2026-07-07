@@ -8,7 +8,7 @@
  *   - `plain-notes`        — Just notes/ + daily/ — escape hatch for casual users
  *   - `worldbuilding`      — Fiction encyclopedia (characters / settings / themes / factions / lore)
  *   - `writing-pipeline`   — ideas → drafts → published, lean three-stage
- *   - `entity-vault`       — Entity vault (people / companies / meetings / concepts / originals / media)
+ *   - `entity-vault`       — Personal CRM (people / companies / meetings / concepts / originals / media)
  *   - `okf`                — Open Knowledge Format conformant-by-construction mini-KB
  *
  * `codebase-wiki` is the only pack whose folder paths nest (`wiki/architecture`,
@@ -1120,7 +1120,7 @@ tags: [published]
 `,
 };
 
-// ─── Pack 7: Entity vault (GBrain-compatible Markdown) ────────────────────
+// ─── Pack 7: Personal CRM (`entity-vault`, GBrain-compatible Markdown) ────
 //
 // Inspired by Garry Tan's gbrain (https://github.com/garrytan/gbrain): a
 // typed-entity vault with `people/`, `companies/`, `meetings/`, `concepts/`,
@@ -1460,9 +1460,9 @@ description: "When the agent does scheduled work: daily briefings, end-of-day do
 // every other pack.
 //
 // Seeded content uses STANDARD markdown links (`[text](./path.md)`), not OK's
-// `[[…]]` shorthand: a conformant OKF bundle's link graph is plain markdown
-// (OKF's export normalizes `[[doc]]` → `[text](./target.md)`), so authoring
-// standard links keeps the seeded bundle portable to a strict OKF consumer.
+// `[[…]]` shorthand: a conformant OKF bundle's link graph is plain markdown,
+// so authoring standard links keeps the seeded bundle portable to a strict
+// OKF consumer.
 //
 // Reserved files are frontmatter-free convention exemplars, valid at seed time;
 // the tool does not keep them live (the pack skill tells the author to maintain

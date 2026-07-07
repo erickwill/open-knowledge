@@ -6,10 +6,12 @@
  * timeline surfaces only actor/system commits — WIP writes from agents,
  * principals, the file watcher, the service, plus upstream syncs — as a flat
  * reverse-chronological list. Checkpoint rows are filtered out: checkpoints
- * are now produced solely by background cleanup jobs (shadow-branch GC,
- * auto-consolidation, silent rescue) and are not user-facing history. The
- * WIP commits those checkpoints fold over remain visible (the server walks
- * their ancestry), so dropping the checkpoint rows loses no edit history.
+ * — from background cleanup jobs (shadow-branch GC, auto-consolidation,
+ * silent rescue) and from agents via the MCP `checkpoint` tool — are restore
+ * points, not user-facing edit history (agents reach them through `history` /
+ * `restore_version`). The WIP commits those checkpoints fold over remain
+ * visible (the server walks their ancestry), so dropping the checkpoint rows
+ * loses no edit history.
  *
  * Per-row UX (shape parity with AgentActivityPanel's burst rows):
  *   - Click anywhere on a row except the Restore icon → toggle inline expand.

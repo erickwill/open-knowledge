@@ -527,7 +527,7 @@ msgid "A reusable starting point for new documents in this folder."
 msgstr ""
 
 #: src/components/TemplateForm.tsx
-msgid "A short line shown under the name in the template list."
+msgid "A short line shown under the title in the template list."
 msgstr ""
 
 #: src/components/SeedDialog.tsx
@@ -6728,7 +6728,7 @@ msgid "The file is in your Trash; the file-watcher will reconcile."
 msgstr ""
 
 #: src/components/TemplateForm.tsx
-msgid "The file on disk, and the id agents use. It can't be changed later."
+msgid "The file on disk, and the id agents use."
 msgstr ""
 
 #: src/components/NewSkillDialog.tsx

@@ -4,28 +4,28 @@ icon: custom/MCP
 description: Tools the OpenKnowledge MCP server exposes to AI agents.
 ---
 
-The MCP server gives AI agents structured access to your knowledge base. A few tools answer without a running server: `exec` (fs-direct shell reads straight off the disk — only the backlink and history enrichment needs the server), plus `config` and `palette`. `preview_url` resolves from the project's lock files, but treats opening a preview as demand: if no server is running it auto-starts one (under the `OK_MCP_AUTOSTART` gate). Every other read tool (`search`, `links`, `history`, etc.) and all write tools route through the Hocuspocus server, which OpenKnowledge starts for you on the first write.
+The MCP server gives AI agents structured access to your knowledge base. A few tools answer without a running server: `exec` (fs-direct shell reads straight off the disk — only the backlink and forward-link enrichment needs the server; history comes from the shadow repo on disk), plus `config`, `palette`, and `workflow`. `preview_url` resolves from the project's lock files, but treats opening a preview as demand: if no server is running it auto-starts one (under the `OK_MCP_AUTOSTART` gate). Every other read tool (`search`, `links`, `history`, etc.) and all write tools route through the Hocuspocus server, which OpenKnowledge auto-starts on the first call that needs it, under the same `OK_MCP_AUTOSTART` gate. All tools take a `cwd` (an absolute path inside the target project) that selects which project the call lands on; a globally registered server requires it unless the client advertises exactly one root.
 
-The surface is **19 tools**. The four write verbs — `write`, `edit`, `delete`, `move` — are native CRUD operations polymorphic over a target. `write`, `edit`, and `delete` nest per-target fields inside the address key (`write({ document: { path, content } })`) and take exactly one target per call: `document`, `folder`, `template`, or `skill` — plus `asset` for `write` and `delete`. `move` takes flat `from`/`to` paths and auto-detects a document, folder, or asset, with nested `template` and `skill` targets for those two.
+The surface is **19 tools**. The four write verbs — `write`, `edit`, `delete`, `move` — are native CRUD operations polymorphic over a target. `write`, `edit`, and `delete` nest per-target fields inside the address key (`write({ document: { path, content } })`) and take exactly one target per call: `document`, `folder`, `template`, or `skill` — plus `asset` for `write` and `delete`, and a `documents` batch on `write` that writes several docs in order, each entry carrying its own `summary`. `move` takes flat `from`/`to` paths and auto-detects a document, folder, or asset, with nested `template` and `skill` targets for those two.
 
 ## Tools
 
 | Tool | Purpose |
 | --- | --- |
 | `exec` | Read-only shell (`cat`, `ls`, `grep`, `find`, `head`, `tail`, `wc`, `sort`, `uniq`, `cut`); reads return frontmatter, backlinks, and recent history. Fs-direct; works without the server. |
-| `search` | Ranked workspace search (title boost + body BM25 + recency; same engine the cmd-K palette uses). When [semantic search](/docs/reference/configuration#semantic-search) is enabled, an embeddings signal is additionally fused into `full_text` ranking (opt-in, content egress) — pass `semantic: false` to force pure-lexical. |
+| `search` | Ranked workspace search (title boost + body BM25 + recency; same engine the cmd-K palette uses). `intent: "omnibar"` narrows to fast title/path matching (`full_text`, the default, includes the body); `scopes` filters hit kinds; `limit` caps rows (default 20, max 100). When [semantic search](/docs/reference/configuration#semantic-search) is enabled, an embeddings signal is additionally fused into `full_text` ranking (opt-in, content egress) — pass `semantic: false` to force pure-lexical. Right after boot, an empty result set with `ready: false` means the index is still building — retry after a couple of seconds rather than treating it as no matches. |
 | `links` | Wiki-link graph. `kind` selects: `backlinks`, `forward`, `dead`, `orphans`, `hubs`, or `suggest`. Accepts an array (e.g. `["dead", "orphans", "hubs"]`) to fetch several views in one call; each view nests under its own key in the response |
-| `history` | Version timeline for a `document`, `folder`, or `skill`. Each entry carries a `version` (commit SHA) you pass to `restore_version` |
-| `skills` | Find and read agent skills. Omit `name` to list every skill across Project + Global; pass `name` to read one (addressed by `name`+`scope`, never by path) |
+| `history` | Version timeline for a `document`, `folder`, or `skill`. Each entry carries a `version` (commit SHA) you pass to `restore_version`. Filter with `kind` (`checkpoint` / `wip` / `upstream`), `author` / `excludeAuthor`, and `branch`; paginate with `limit` / `offset` (default 50, max 200). `folder: ""` selects the project-root timeline |
+| `skills` | Find and read agent skills. Omit `name` to list every skill across Project + Global (rows carry `installed` + `hosts`); pass `name` to read one (addressed by `name`+`scope`, never by path); pass `name` + `file` to read one bundle file's text — the read path for `references/` and `scripts/` content |
 | `config` | Read the effective merged config (`config({ key: "appearance.theme" })` for a sub-tree; omit `key` for the whole config) |
 | `palette` | Markdown-native authoring forms, themed `html preview` embed starters, and theme tokens. Pass `components` for the canonical components' full JSX prop schemas |
-| `preview_url` | Resolve the browser-reachable preview URL. Per-response `previewUrl` fields elsewhere are route-only (`/#/<doc>`); call this when you need the full openable URL |
-| `share_link` | Build a GitHub-substrate share URL for a doc to send to a teammate (read-only against `.git/`; never publishes) |
-| `write` | Create or overwrite a `document`, `folder`, `template`, `skill`, or `asset`. For a document: `{ path, content }`, or `{ path, template }` to instantiate from a folder template. `position` selects `replace` (full rewrite; the only mode that touches frontmatter), `append`, or `prepend` |
-| `edit` | Modify a `document` (body find/replace **or** a frontmatter merge-patch), a `folder` (frontmatter merge-patch), a `template`, or a `skill` |
+| `preview_url` | Resolve the browser-reachable preview URL. Targets a `document`, `folder`, or `skill` in the current project, or — via `file`, an absolute path — a markdown file outside it (resolved through the session serving that file). Per-response `previewUrl` fields elsewhere are route-only (`/#/<doc>`); call this when you need the full openable URL. `armPaneTarget` briefly arms the target so a host preview pane opens on it |
+| `share_link` | Build a GitHub-substrate share URL for a doc or folder to send to a teammate (`kind` disambiguates; `path: ""` with `kind: "folder"` shares the content root). Responses carry a `freshness` verdict — `current`, `stale` (unpushed changes), or `absent` (never pushed), omitted when the probe can't run — and prepend a matching warning to relay with the link. Read-only against `.git/`; never publishes |
+| `write` | Create or overwrite a `document`, `folder`, `template`, `skill`, or `asset`. For a document: `{ path, content }`, or `{ path, template }` to instantiate from a folder template. `position` selects `replace` (full rewrite; the only mode that touches frontmatter), `append`, or `prepend`. `extension` selects `.md` (default) or `.mdx` for a new document; an existing doc keeps its extension (the MCP cannot change it). An `asset` takes exactly one of `content` (base64, for small files) or `source` (a local path the server reads, for large files) |
+| `edit` | Modify a `document` (body find/replace **or** a frontmatter merge-patch), a `folder` (frontmatter merge-patch), a `template`, or a `skill`. Body edits take `{ path, find, replace, occurrence? }`; `occurrence` selects which match (1 = first) |
 | `delete` | Delete a `document` (one path or an array), `folder`, `template`, `skill`, or `asset` |
-| `move` | Move or rename a `document`, `folder`, `asset`, `template`, or `skill`, rewriting every affected link (templates and skills carry no inbound links) |
-| `install` | Project an authored skill (the Draft produced by `write({ skill })`) into your editors — the Draft → Installed step |
+| `move` | Move or rename a `document`, `folder`, `asset`, `template`, or `skill`, rewriting every affected link (templates and skills carry no inbound links). A skill also moves between Project and Global scope via `scope` + `toScope`: history does not transfer, and the moved skill lands as a Draft — run `install` afterward |
+| `install` | Project an authored skill (the Draft produced by `write({ skill })`) into your editors — the Draft → Installed step. `targets` (`claude` / `cursor` / `codex` / `opencode`) overrides the project-configured editor set; the source is validated before projection |
 | `checkpoint` | Save a project-wide version snapshot — a single restore point. Returns its `version` |
 | `restore_version` | Restore one `document` or `skill` to a historical `version` (the SHA from `history` or `checkpoint`) |
 | `conflicts` | Read GitHub-sync merge conflicts. `kind: "list"` enumerates tracked conflicts; `kind: "content"` returns one file's base / ours / theirs stages |
@@ -34,7 +34,11 @@ The surface is **19 tools**. The four write verbs — `write`, `edit`, `delete`,
 
 ## Output shape mirrors the input
 
-The write verbs nest their result under the same target key you wrote, mirroring the input: `write({ folder })` returns `{ folder: { ok, path } }`, `edit({ document })` returns `{ document: { … } }` (with any `contentDivergence`), and a batch returns `{ documents: [ … ] }`. The uniform preview envelope (`previewUrl`, `previewUrlSource`, `warning`) always stays at the top level — every tool surfaces it the same way. `conflicts` and `links` nest the same way under their `kind`.
+The write verbs nest their result under the same target key you wrote, mirroring the input: `write({ folder })` returns `{ folder: { ok, path } }`, `edit({ document })` returns `{ document: { … } }`, and a batch returns `{ documents: [ … ] }`. The preview envelope (`previewUrl`, `previewUrlSource`, `warning`) stays at the top level on `write` and `edit` responses; read tools (`search`, `links`, `exec`) attach a route-only `previewUrl` to each hit or entry instead. `conflicts` and `links` nest the same way under their `kind`.
+
+## Advisory warnings
+
+`write` and `edit` results may carry a `warnings` array on the document entry (per entry for a batch); `restore_version` carries it at the top level. Entries are discriminated by `kind`. `content-divergence` and `disk-edit-reconciled` are write-integrity signals — the stored doc differs from what the call composed, so re-read it before editing further. `mermaid-parse-error` means the write landed but that fence won't render — fix the fence and re-edit.
 
 ## Instantiating from a template
 
@@ -44,7 +48,7 @@ The write verbs nest their result under the same target key you wrote, mirroring
 
 ## Editing frontmatter
 
-Use `edit({ document: { path, frontmatter } })` for frontmatter edits: it applies a JSON Merge Patch (set or create a key with a value, delete a key by passing `null`). A document body find/replace (`edit({ document: { path, find, replace } })`) is body-only and refuses patterns that touch frontmatter; `write` with `position: "replace"` is the only write mode that includes the `---\n…\n---` block (other positions ignore any frontmatter in the payload). Folders and templates take frontmatter the same way: `edit({ folder: { path, frontmatter } })`.
+Use `edit({ document: { path, frontmatter } })` for frontmatter edits: it applies a top-level merge patch (set or create a key with a value, delete a key by passing `null`; a nested object replaces that key's whole subtree, and `null` inside a subtree is rejected). A document body find/replace (`edit({ document: { path, find, replace } })`) is body-only and refuses patterns that touch frontmatter; `write` with `position: "replace"` is the only write mode that includes the `---\n…\n---` block (other positions ignore any frontmatter in the payload). Folders and templates take frontmatter the same way: `edit({ folder: { path, frontmatter } })`.
 
 ## Edit summaries
 
@@ -63,7 +67,7 @@ To recover, call `conflicts({ kind: "content", file })` to inspect the merge sta
 - `content`: write the exact bytes you supply (for example, a merged result you composed by reading both stages).
 - `delete`: `git rm` the file (for delete-vs-modify shapes where one stage is missing).
 
-To detect conflict state proactively without waiting for a 409, call `conflicts({ kind: "list" })`; it enumerates every conflicted doc with its `lifecycle: { status, reason }`. `exec("cat …")` also returns that `lifecycle` field for any doc.
+To detect conflict state proactively without waiting for a 409, call `conflicts({ kind: "list" })`; each entry is `{ file, detectedAt, … }`. `conflicts({ kind: "content" })` adds the doc's `lifecycleStatus` alongside the merge stages.
 
 ## Preview links
 

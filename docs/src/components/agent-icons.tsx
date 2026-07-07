@@ -1,6 +1,7 @@
 import { ClaudeIcon } from '@/components/icons/claude';
 import { CodexIcon } from '@/components/icons/codex';
 import { CursorIcon } from '@/components/icons/cursor';
+import { OpenClawIcon } from '@/components/icons/openclaw';
 import { OpenCodeIcon } from '@/components/icons/opencode';
 
 const AGENTS = [
@@ -8,6 +9,7 @@ const AGENTS = [
   { name: 'Cursor', Icon: CursorIcon },
   { name: 'Codex', Icon: CodexIcon },
   { name: 'OpenCode', Icon: OpenCodeIcon },
+  { name: 'OpenClaw', Icon: OpenClawIcon },
 ] as const;
 
 export function AgentIcons() {

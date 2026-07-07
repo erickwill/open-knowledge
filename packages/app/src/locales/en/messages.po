@@ -532,8 +532,8 @@ msgid "A reusable starting point for new documents in this folder."
 msgstr "A reusable starting point for new documents in this folder."
 
 #: src/components/TemplateForm.tsx
-msgid "A short line shown under the name in the template list."
-msgstr "A short line shown under the name in the template list."
+msgid "A short line shown under the title in the template list."
+msgstr "A short line shown under the title in the template list."
 
 #: src/components/SeedDialog.tsx
 msgid "A simple place to write, with one file per topic and a daily journal. Pick this if you just want to start writing and let the links between notes build up over time."
@@ -6733,8 +6733,8 @@ msgid "The file is in your Trash; the file-watcher will reconcile."
 msgstr "The file is in your Trash; the file-watcher will reconcile."
 
 #: src/components/TemplateForm.tsx
-msgid "The file on disk, and the id agents use. It can't be changed later."
-msgstr "The file on disk, and the id agents use. It can't be changed later."
+msgid "The file on disk, and the id agents use."
+msgstr "The file on disk, and the id agents use."
 
 #: src/components/NewSkillDialog.tsx
 #: src/components/SkillProperties.tsx

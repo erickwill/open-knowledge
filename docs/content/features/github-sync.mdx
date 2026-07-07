@@ -20,6 +20,8 @@ It helps you:
 
 ## Clone an existing GitHub repository
 
+These steps use the desktop app; from a terminal, [`ok clone`](/docs/reference/cli#clone-from-github) does the same.
+
 <Steps>
 
 <Step>
@@ -31,7 +33,7 @@ It helps you:
 <Step>
     ### Sign into GitHub
 
-    If you are already signed in with the GitHub CLI, OpenKnowledge will use those credentials by default. If not, click **Sign into GitHub** and complete the device authentication flow.
+    If you are already signed in with the GitHub CLI, OpenKnowledge will use those credentials by default. If not, click **Connect GitHub** and complete the device authentication flow.
 </Step>
 
 <Step>
@@ -63,21 +65,23 @@ While sync is active, OpenKnowledge:
 - Commits your edits locally using the configured Git identity
 - Pushes those commits back to the remote so collaborators see your changes
 
+If your Git identity isn't set, sync still commits under a default "OpenKnowledge" author; the sync status indicator reminds you to set one so teammates see your name.
+
 Pulls can overwrite uncommitted local file changes, so commit or discard work-in-progress before you enable sync.
 
-If you want to set a default auto-sync setting for future collaborators, go to the project settings page and navigate to the **Sync** -> **Shared default** section.
+If you want to set a default auto-sync setting for future collaborators, go to the project settings page and navigate to the **Sync** -> **Shared default** section. This writes [`autoSync.default`](/docs/reference/configuration) to the project's committed `.ok/config.yml`, pre-answering the enable-sync prompt for everyone who clones the repo; each machine's own auto-sync choice overrides it.
 
 ## Authentication
 
 If you are logged in with the GitHub CLI, OpenKnowledge will use those credentials for GitHub operations. If not, you can complete device authentication to generate an OAuth token. OpenKnowledge stores this token in the keychain and reuses it for syncing, cloning, and publishing.
 
-Manage the connection from **Settings → Account**. **Connect GitHub** authorizes OpenKnowledge to browse and sync your repositories; **Disconnect** clears OpenKnowledge's GitHub token only.
+Manage the connection from **Settings → Account**. **Connect GitHub** authorizes OpenKnowledge to browse and sync your repositories; **Disconnect** clears OpenKnowledge's GitHub token only. From a terminal, the [`ok auth`](/docs/reference/cli) subcommands manage the same credentials: `ok auth signout` matches **Disconnect**, `ok auth pat` stores a Personal Access Token when device authentication isn't an option, and `--host` targets GitHub Enterprise.
 
 The sync status indicator surfaces an auth-error state when stored credentials stop working, and sync pauses until you reconnect.
 
 ## Sync status and conflicts
 
-The sync status indicator in the editor shows the current state of the connection: how many commits you are ahead or behind the remote, when the last sync ran, whether sync is paused, and how many files have unresolved conflicts. You can also trigger an immediate sync from the same control instead of waiting for the next scheduled run.
+The sync status indicator in the editor shows the current state of the connection: how many commits you are ahead or behind the remote, when the last sync ran, whether sync is paused, and how many files have unresolved conflicts. You can also trigger an immediate sync from the same control instead of waiting for the next scheduled run. From a terminal, `ok sync` commits, pulls, and pushes in one pass; `ok pull` and `ok push` cover one direction each. All three work whether or not the editor is open (see the [CLI reference](/docs/reference/cli)).
 
 ## Resolving a conflict
 
@@ -87,14 +91,18 @@ Click the badged tab or any row in the Conflicts section to focus the conflict.
 
 You can't edit a page with conflicts until they're resolved; the same applies to agents writing over MCP.
 
+## Work on multiple branches
+
+In the desktop app you can open several branches of the same project at once, each in its own window. Click your project name in the bottom left and pick a branch or worktree from the project switcher (open worktrees also appear in the Command Palette); **New worktree** starts a fresh branch or checks out an existing one. Opening a branch that has no worktree yet creates one on demand under `.ok/worktrees/`, kept out of `git status`, so each window runs its own editor and server without touching your main working copy.
+
 ## Common failure modes
 
-A few situations stop sync from completing successfully. In each case the sync status indicator changes color and tells you what's wrong. Sync stays paused until the underlying issue is fixed, then picks back up on its own.
+A few situations stop sync from completing successfully. In each case the sync status indicator changes color and tells you what's wrong. Except where noted, sync stays paused until the underlying issue is fixed, then picks back up on its own.
 
 ### Conflicts and pending changes
 
 - **Unresolved conflicts.** If even one file has a conflict between your edits and your team's, sync waits. You can keep working on every other doc; only the conflicted files are frozen until you choose a side from the diff view. See [Resolving a conflict](#resolving-a-conflict) above.
-- **Local changes would be overwritten by an incoming update.** A teammate's update is ready to pull, but you have uncommitted local edits to the same file. Sync pauses rather than clobber your work. Commit or discard the in-progress edit from the editor's git surface and sync resumes.
+- **Local changes would be overwritten by an incoming update.** A teammate's update is ready to pull, but a file it touches has uncommitted local changes. Doc edits are committed automatically before merging, so this usually means other tracked files, like configs. Sync pauses rather than clobber your work; commit, stash, or discard those changes from a terminal and sync resumes.
 - **Edits made outside the app aren't ready yet.** If you (or another tool) edited a file directly on disk while sync wanted to merge, OpenKnowledge waits until those external edits settle before merging. Usually this clears in a second or two on its own.
 
 ### Project isn't on a normal branch
@@ -106,8 +114,7 @@ A few situations stop sync from completing successfully. In each case the sync s
 
 - **Authentication errors.** Your stored credentials expired, were revoked, or don't have access to this repository anymore. Reconnect from the sync indicator (or from **Settings → Account**) to clear the error.
 - **You don't have permission to push to this repo.** Someone shared a project backed by a GitHub repo where your account isn't a collaborator (or has read-only access on a private repo). OpenKnowledge checks this up front: instead of prompting you to enable sync that would just fail, the toggle is disabled with an inline "You don't have permission to push to this repo" message in both the sync indicator popover and **Settings → Sync**. If you had sync enabled on a different repo and switch to one you can't push to, OpenKnowledge pauses sync in-memory rather than mutating your preference; your `Auto-sync: on` setting is preserved for the next repo you have full access to. Ask the project owner for write access, then click sync to re-check.
-- **Protected branches and rejected pushes.** If the target branch requires reviews, signed commits, or status checks, GitHub rejects the push. OpenKnowledge turns sync off automatically so it stops retrying. Switch to a branch you can push to, or use a pull request for the protected branch instead.
-- **Missing Git identity.** Commits need a name and email attached. The status indicator prompts you to set one the first time sync needs to commit.
+- **Protected branches and rejected pushes.** If the target branch requires reviews, signed commits, or status checks, GitHub rejects the push. OpenKnowledge turns sync off automatically so it stops retrying, and it stays off until you turn it back on from the sync indicator or **Settings → Sync**. Switch to a branch you can push to, or use a pull request for the protected branch instead.
 
 ### Temporary problems
 
