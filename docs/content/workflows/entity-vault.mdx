@@ -1,13 +1,16 @@
 ---
 title: Entity vault (GBrain-compatible) workflow
+sidebarTitle: Entity vault (GBrain)
 icon: LuBoxes
 description: "A personal memory for the people, companies, and meetings in your world. Each one gets its own page that an AI keeps up to date as you learn more, and you can correct anything by hand. Works with Garry Tan's gbrain if you use it, but doesn't need it."
 ---
 
-An **Entity vault (GBrain-compatible Markdown)** is a Markdown brain organized around typed dossiers: people, companies, meetings, concepts, originals, and media. Each durable dossier has two zones:
+An **Entity vault (GBrain-compatible Markdown)** is a Markdown brain organized around typed dossiers: people, companies, meetings, concepts, originals, and media. Each person, company, and concept dossier has two zones:
 
 1. **Compiled truth** — the current synthesis, rewritten as evidence changes.
 2. **Timeline** — append-only evidence bullets, dated and attributable.
+
+Meetings, originals, and media stay raw records.
 
 OpenKnowledge scaffolds and edits that Markdown. Garry Tan's [`gbrain`](https://github.com/garrytan/gbrain), if you install it, can import/sync the same vault and add its DB-backed retrieval, graph extraction, embedding, and automation. OK does **not** replace `gbrain`; it gives GBrain-style Markdown brains a human cockpit for review, correction, attribution, and Git-visible edits.
 
@@ -24,7 +27,7 @@ OpenKnowledge scaffolds and edits that Markdown. Garry Tan's [`gbrain`](https://
       <div id="dv-tl" style="margin-top:6px;display:flex;flex-direction:column;gap:5px"></div>
     </div>
   </div>
-  <div class="cap">Two zones per dossier: a compiled truth the agent rewrites as evidence changes, and a timeline it only ever appends to.</div>
+  <div class="cap">Two zones per person, company, or concept dossier: a compiled truth the agent rewrites as evidence changes, and a timeline it only ever appends to.</div>
 </div>
 <style>
 .cap{margin-top:12px;color:var(--muted-foreground);font-size:12.5px;text-align:center}
@@ -56,7 +59,7 @@ Founders and investors get a second brain over **people, companies, meetings, an
 
 ## What the pack creates
 
-Pick **Entity vault (GBrain-compatible)** in the starter-pack picker, or run:
+Seeding needs an initialized project — run [`ok init`](../get-started/quickstart.mdx) first. Pick **Personal CRM** in the starter-pack picker, or run:
 
 ```bash
 ok seed --pack entity-vault
@@ -83,7 +86,7 @@ your-project/
 Each folder includes an `.ok/frontmatter.yml` description that agents see during file listings/searches, plus templates under `.ok/templates/`.
 
 <Callout type="info" title="Seeding also installs a skill">
-  `ok seed --pack entity-vault` installs the **Entity vault** project skill into your agent editors (Claude Code, Cursor, Codex, OpenCode). It's the "how to work here" guidance behind the dossier conventions — compiled-truth vs. append-only timeline, path-qualified links, the correction loop — read automatically, and editable like any other doc. It lands as a real `SKILL.md` committed to your repo, one per detected editor. See [Skills](../features/skills.mdx) and [what OpenKnowledge writes to disk](../reference/what-open-knowledge-writes.mdx).
+  `ok seed --pack entity-vault` installs the **Entity vault** project skill into your agent editors (Claude Code, Cursor, Codex, OpenCode). It's the "how to work here" guidance behind the dossier conventions — compiled-truth vs. append-only timeline, path-qualified links, the correction loop — read automatically, and editable like any other doc. It lands as a single `SKILL.md` in your repo under `.ok/skills/`, symlinked into the skills folder of each editor already set up for the project. See [Skills](../features/skills.mdx) and [what OpenKnowledge writes to disk](../reference/what-open-knowledge-writes.mdx).
 </Callout>
 
 ## Markdown shape
@@ -196,13 +199,13 @@ Aha moment: **GBrain makes agent memory useful; OK makes the Markdown memory ins
 | --- | --- |
 | After each meeting | Drop raw notes into `meetings/<date>-<slug>.md`; link mentioned people/companies/concepts. |
 | End of day | Ask an agent to create/update dossiers and append timeline bullets from new meetings. |
-| Weekly | Run OK's dead-link audit; triage new entities vs typos vs intentional placeholders. |
-| Monthly | Audit stale dossiers, empty timelines, and compiled truth that conflicts with recent evidence. |
+| Weekly | Audit stale dossiers, empty timelines, and compiled truth that conflicts with recent evidence. |
+| Monthly | Run OK's dead-link audit; triage new entities vs typos vs intentional placeholders. |
 | When using `gbrain` | Commit OK edits, then run `gbrain sync --repo <vault>` and `gbrain embed --stale` as needed. |
 
 ## Naming note
 
-The pack is presented as **Entity vault (GBrain-compatible)**, not **GBrain Entity Vault**. "Entity vault" names the portable Markdown workflow OK scaffolds. "GBrain-compatible" describes the interop contract with Garry Tan's `gbrain` without claiming ownership of his project or implying OK is a replacement engine.
+The starter-pack picker presents the pack as **Personal CRM**; its CLI pack id is `entity-vault`. "Entity vault" names the portable Markdown workflow OK scaffolds. "GBrain-compatible" describes the interop contract with Garry Tan's `gbrain` without claiming ownership of his project or implying OK is a replacement engine.
 
 ## Further reading
 

@@ -9,6 +9,8 @@ OpenKnowledge works with Claude Code through MCP plus an installed skill that te
 - **Claude Code CLI** — the `claude` command in your terminal.
 - **Claude Desktop app** — Claude Code in the **Code** tab.
 
+Claude Desktop's regular chat can use the tools too — see [Claude Desktop chat](#claude-desktop-chat).
+
 ## Install
 
 <McpInstall editor="Claude Code" />
@@ -25,8 +27,16 @@ Open the project in Claude Code and ask:
 
 <VerifyExec subject="Claude Code" />
 
-If Claude Code doesn't use the OpenKnowledge `exec` tool, restart it so it picks up the new MCP entry. If it's still missing and `ok init` reported your config was `left unchanged`, OpenKnowledge couldn't parse `~/.claude.json` safely and left it untouched — fix the config and re-run `ok init`.
+If Claude Code doesn't use the OpenKnowledge `exec` tool, restart it so it picks up the new MCP entry. If it's still missing and `ok init` reported your config was `left unchanged`, OpenKnowledge couldn't edit `~/.claude.json` safely and left it untouched — the summary names the reason in parentheses; fix the config and re-run `ok init`.
 
 ## Live editing
 
 When Claude Code writes to a doc, you'll see the change land live in OpenKnowledge. Just ask Claude Code to open it for you.
+
+## Claude Desktop chat
+
+`ok init` and the consent dialog also register the MCP server with Claude Desktop when it's installed — user-level, in `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS or `%APPDATA%\Claude\claude_desktop_config.json` on Windows. Claude Desktop picks up the entry only after you quit and relaunch it.
+
+After relaunching, ask in any chat:
+
+<VerifyExec subject="Claude Desktop" />

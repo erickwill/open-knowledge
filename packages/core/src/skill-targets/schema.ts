@@ -14,7 +14,8 @@
  * absent, OK falls back to the editors the project is already configured for.
  *
  * Only editors with a project skill surface are valid targets
- * (`claude` / `cursor` / `codex`; Claude Desktop reads user-global skills).
+ * (`claude` / `cursor` / `codex` / `opencode`; Claude Desktop and OpenClaw
+ * read user-global skills only).
  */
 
 import { z } from 'zod';
@@ -34,10 +35,11 @@ export const SKILL_TARGETS_SCHEMA_VERSION = 1;
  * Editor ids valid as install-projection targets. Runtime values come from the
  * single source `PROJECT_SKILL_EDITOR_IDS` (derived from `EDITOR_PROJECT_SKILL_ROOT`)
  * so the two can't drift. z.enum needs a literal tuple, which the derived array's
- * `.filter` widens to `EditorId`, so the cast restates the narrow literal shape:
- * `Exclude<EditorId, 'claude-desktop'>` is exactly the set of editors WITH a
- * project skill surface (`claude` / `cursor` / `codex`). schema.test.ts asserts
- * the cast stays value-equal to the derived list as a backstop.
+ * `.filter` widens to `EditorId`, so the cast restates a narrower literal shape:
+ * `Exclude<EditorId, 'claude-desktop'>` still admits `openclaw` (also without a
+ * project skill surface), so the type over-approximates the runtime set
+ * (`claude` / `cursor` / `codex` / `opencode`); schema.test.ts asserts the cast
+ * stays value-equal to the derived list as a backstop.
  */
 type ProjectSkillEditorId = Exclude<EditorId, 'claude-desktop'>;
 export const SkillTargetEditorSchema = z.enum(

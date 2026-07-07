@@ -4,16 +4,16 @@
   "pages": [
     "---GET STARTED---",
     "...get-started",
-    "---WORKFLOWS---",
+    "---USE CASES---",
     "...workflows",
-    "---MIGRATE---",
-    "...migrate",
     "---INTEGRATIONS---",
     "...integrations",
     "---FEATURES---",
     "...features",
     "---ADVANCED---",
     "...advanced",
+    "---IMPORT & TRY---",
+    "...migrate",
     "---REFERENCE---",
     "...reference"
   ]

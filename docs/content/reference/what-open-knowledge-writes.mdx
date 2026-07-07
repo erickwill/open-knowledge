@@ -1,6 +1,6 @@
 ---
 title: What OpenKnowledge writes to your system
-sidebarTitle: What it writes
+sidebarTitle: Installation details
 icon: LuHardDrive
 description: Every file OpenKnowledge creates or changes — when, where, in-project vs. your home directory — plus the opt-outs and what leaves your machine (nothing by default).
 ---
@@ -10,7 +10,7 @@ OpenKnowledge keeps your knowledge base as plain markdown in your own project di
 This page lists every one of them: **when** each write happens, **what** it is, and **where** it is written.
 
 <Callout type="info" title="The short version">
-  **Nothing leaves your machine by default.** Diagnostic logs and telemetry are local-only — there's no usage phone-home. The handful of things that *can* send data off your machine — semantic search, a diagnostic bundle, GitHub sync, and the desktop app's update check — are opt-in or on-demand, except the desktop app's update check, which runs automatically on launch. All of them are listed under [What leaves your machine](#what-leaves-your-machine).
+  **Nothing leaves your machine by default — except the desktop app's automatic checks.** Diagnostic logs and telemetry stay on your machine. The things that *can* send data off it — semantic search, a diagnostic bundle, and GitHub sync — are opt-in or on-demand. The desktop app is the exception: it checks for updates automatically (sending its app version and channel), and on its first launch opens your browser once to check for a pending share link. All of them are listed under [What leaves your machine](#what-leaves-your-machine).
 </Callout>
 
 ## How to read this page
@@ -22,7 +22,7 @@ Writes fall into two buckets, and each table's **Scope** column tells you which:
 
 OpenKnowledge installs one of two ways, and the footprint differs a little between them. Pick yours below — each tab lists the complete set of writes for that path. The [opt-outs](#opt-outs-in-one-place) and [what leaves your machine](#what-leaves-your-machine) at the end apply to both.
 
-<Tabs groupId="ok-install" persist className="ok-flush-tabs ok-tabs-h2" items={['MacOS app', 'CLI']}>
+<Tabs groupId="ok-install" persist className="ok-flush-tabs ok-tabs-h2" items={['macOS app', 'CLI']}>
 
 <Tab>
 
@@ -38,7 +38,9 @@ The macOS app ships as a signed `.dmg` you drag into `/Applications`. On launch 
 | `~/.ok/mcp-status.json` | Records your first-launch MCP-setup consent choice | Outside-project (home dir) |
 | `~/Library/Caches/OpenKnowledge-updater/` | Staged auto-update downloads (electron-updater) | Outside-project (home dir) |
 
-The app registers the `openknowledge://` URL scheme (for deep links) and checks for updates against the OpenKnowledge GitHub releases feed. Updates are **not** downloaded automatically until you choose to update; they install on the next quit. Override the feed with `OK_UPDATER_FEED_URL`.
+The app registers the `openknowledge://` URL scheme (for deep links) and checks for updates — on launch and periodically while it runs — against the OpenKnowledge update service at `openknowledge.ai/updates`, which redirects to the GitHub release asset and counts the update per version and channel (falling back to GitHub directly if it's unreachable). An update on your channel downloads in the background and installs on the next quit; you can also check on demand from **Check for updates…** in the app and Help menus. The channel (stable or beta) is fixed by the build you installed — switch by reinstalling the other from `openknowledge.ai/download/stable` or `/download/beta`. Override the feed with `OK_UPDATER_FEED_URL`.
+
+On its first launch the app also opens your default browser once to `openknowledge.ai/continue`, to check whether you installed from a share link and redeem it if so; the exchange completes over a short-lived local loopback listener.
 
 ### Shell and `PATH`
 
@@ -58,6 +60,8 @@ The managed block is clearly fenced so you can see and remove it:
 
 ```bash
 # >>> open-knowledge cli >>>
+# ! Contents within this block are managed by OpenKnowledge. Do not edit.
+# ! Delete this whole block to opt out — OpenKnowledge will not re-add it.
 [ -f "$HOME/.ok/env.sh" ] && . "$HOME/.ok/env.sh"
 # <<< open-knowledge cli <<<
 ```
@@ -79,10 +83,11 @@ When you initialize or open a project, the app scaffolds the same project files 
 | `.ok/`, `.ok/config.yml` | Project directory and its [config](/docs/reference/configuration) | In-project, committed |
 | `.ok/.gitignore` | Keeps machine-local runtime state (`local/`, `principal.json`, `server.lock`, …) out of git | In-project, committed |
 | `.okignore` | Paths excluded from the editor, search, and agents — see [Ignore patterns](/docs/features/ignore-patterns) | In-project, committed |
-| `.mcp.json`, `.cursor/mcp.json`, `.codex/config.toml`, `opencode.json` | Project-scoped MCP registration, one per detected editor | In-project, committed |
-| `.claude/skills/`, `.cursor/skills/`, `.codex/skills/`, `.opencode/skills/` | Project-local "rich" OpenKnowledge skill (`SKILL.md`), one per detected editor | In-project, committed |
+| `.mcp.json`, `.cursor/mcp.json`, `.codex/config.toml`, `opencode.json` | Project-scoped MCP registration for all four project-capable editors (Claude, Cursor, Codex, OpenCode), written regardless of what's installed so the repo is ready for teammates | In-project, committed |
+| `.claude/skills/`, `.cursor/skills/`, `.codex/skills/`, `.opencode/skills/` | Project-local "rich" OpenKnowledge skill (`SKILL.md`) for the same four editors | In-project, committed |
+| `.ok/skill-targets.json` | Committed list of which editors receive skills, written when you customize the targets | In-project, committed |
 | `.claude/launch.json` | Configures Claude Code's preview pane to open the editor (on a local UI port, `39848`) | In-project, committed |
-| `~/.claude.json`, `~/Library/Application Support/Claude/claude_desktop_config.json`, `~/.cursor/mcp.json`, `~/.codex/config.toml`, `~/.config/opencode/opencode.json` | User-level `open-knowledge` MCP registration, one per detected editor (so it's available in every project) | Outside-project (editor config) |
+| `~/.claude.json`, `~/Library/Application Support/Claude/claude_desktop_config.json`, `~/.cursor/mcp.json`, `~/.codex/config.toml`, `~/.config/opencode/opencode.json`, `~/.openclaw/openclaw.json` | User-level `open-knowledge` MCP registration, one per detected editor, so it's available in every project (`~/.openclaw/openclaw.json` only when `~/.openclaw/` exists) | Outside-project (editor config) |
 
 ### While a project is open
 
@@ -97,11 +102,13 @@ The app runs a collaboration server for the open project. It writes runtime stat
 | `.ok/local/telemetry/spans-*.jsonl` | Local diagnostic spans, rotated at ~50 MB | In-project, gitignored |
 | `.ok/local/logs/server-*.jsonl` | Local server logs, rotated at ~25 MB | In-project, gitignored |
 | `.ok/local/cache/<branch>/backlinks.json` | Backlink-graph cache | In-project, gitignored |
-| `.git/ok/` | Shadow git repo holding per-writer work-in-progress refs | In-project, gitignored (inside `.git/`) |
+| `.ok/local/skill-management.json`, `.ok/local/installed-skills.json` | Skill-management toggle (`ok skills manage`) and per-project skill-install markers | In-project, gitignored |
+| `.ok/worktrees/<branch>/` | Git worktree checkout created when you open a branch in its own window (project switcher); the path is also added to `.git/info/exclude` | In-project, gitignored |
+| `.git/ok/` — or `.git/worktrees/<name>/ok/` in a linked worktree, or the enclosing repo's `.git/ok-<slug>/` when your project is a subfolder of a larger repo | Shadow git repo holding per-writer work-in-progress refs; always inside a git admin dir, never in your content tree | In-project, gitignored (inside `.git/`) |
 
 Diagnostic logs and telemetry are **on by default but local-only** — credential-bearing attributes are redacted (`[REDACTED]`) before anything is written, the files rotate at the size caps above, and nothing leaves the machine until you explicitly run `ok diagnose bundle`. Turn the local sink off with `telemetry.localSink.enabled: false`; see [Configuration](/docs/reference/configuration).
 
-On each launch and project open, the app also runs **repair sweeps**: it rewrites *existing* `open-knowledge` MCP entries (in the editor configs above, plus that project's `.vscode/settings.json`), `.claude/launch.json`, and skill files to the current canonical form — a no-op when nothing has drifted, and it **never adds** an entry to an editor that doesn't already have one. Same `OK_RECLAIM_DISABLE=1` opt-out.
+On each launch and project open, the app also runs **repair sweeps**: it rewrites *existing* `open-knowledge` MCP entries (in the editor configs above), `.claude/launch.json`, and the OpenKnowledge skill bundles (`open-knowledge-discovery` and `open-knowledge-write-skill`, in `~/.agents/skills/` and each detected editor's `~/.claude/skills/`, `~/.cursor/skills/`, `~/.codex/skills/`, `~/.opencode/skills/`) to the current canonical form — a no-op when nothing has drifted. It **never adds** an MCP entry to an editor that doesn't already have one; and when you turn on skill management for a project, it also adopts your existing editor skills into `.ok/skills/`. Same `OK_RECLAIM_DISABLE=1` opt-out.
 
 ### Home directory and credentials (`~/.ok/`)
 
@@ -111,12 +118,15 @@ On each launch and project open, the app also runs **repair sweeps**: it rewrite
 | `~/.ok/secrets.yml` | Embeddings provider API key for [semantic search](/docs/reference/configuration#semantic-search), if you set one. Written `0600`; never in `config.yml` | **Yes** (`0600`) |
 | `~/.ok/auth.yml` | Auth-token fallback, used only when the Keychain is unavailable. Written `0600` | **Yes** (`0600`) |
 | `~/.ok/skill-state.yml`, `~/.ok/skill-install-events.jsonl` | Skill-install bookkeeping | No |
+| `~/.ok/skills/<name>/` | Your global-scope authored skills (kept by `ok uninstall` unless `--purge-content`) | No |
 | `~/.ok/stats.jsonl` | Local "open with AI" handoff stats — local-only, no phone-home | No |
 | `~/.ok/mcp-status.json` | First-launch MCP consent record | No |
-| `~/.ok/logs/`, `~/.ok/bug-reports/` | Desktop logs and generated diagnostic bundles | No |
+| `~/.ok/logs/`, `~/.ok/bug-reports/` | Desktop and CLI logs, and bug-report bundles from `ok bug-report` (`ok diagnose bundle` writes into the project, under `.ok/local/diagnostics/`) | No |
 | `~/.ok/bin/`, `~/.ok/env.sh` | `PATH` shim (see [Shell and `PATH`](#shell-and-path) above) | No |
 
 **Auth tokens** (for GitHub sync, sharing, and cloning) are stored in the macOS **Keychain** under the service name `open-knowledge`. The `~/.ok/auth.yml` file is only a fallback for headless environments where the Keychain isn't reachable; when the Keychain becomes available, the token is migrated into it and the file copy is removed.
+
+The **Install for Claude Chat & Cowork** command (command palette or Help menu) builds `~/Downloads/openknowledge.skill` on demand and hands it to Claude Desktop for upload; the build is version-gated via `~/.ok/skill-state.yml`.
 
 </Tab>
 
@@ -134,7 +144,7 @@ Installing `@inkeep/open-knowledge` from npm (or invoking it with `npx`) drops t
 | `~/.ok/skill-state.yml` | Records which skill version is installed, so the step is skipped next time | Outside-project (home dir) |
 | `~/.ok/skill-install-events.jsonl` | Append-only local log of skill-install attempts | Outside-project (home dir) |
 
-The `postinstall` step is **non-fatal** (install always succeeds even if it fails) and **version-gated** (it does nothing if the current version is already installed). It writes only the discovery skill into the shared `~/.agents/skills/` directory; it does not touch your editors' individual skill folders. The only network access is npm fetching the `skills` helper.
+The `postinstall` step is **non-fatal** (install always succeeds even if it fails) and **version-gated** (it does nothing if the current version is already installed). It installs the discovery skill for every detected agent host: the shared `~/.agents/skills/` directory and each detected editor's user-level skills folder (`~/.claude/skills/`, `~/.cursor/skills/`, `~/.codex/skills/`, `~/.opencode/skills/`). The only network access is npm fetching the `skills` helper.
 
 <Callout type="info" title="Opt out">
   Install with `npm install --ignore-scripts` to skip the `postinstall` skill step entirely. You can always add the skills later from `ok init`.
@@ -150,8 +160,9 @@ The `postinstall` step is **non-fatal** (install always succeeds even if it fail
 | `.ok/.gitignore` | Keeps machine-local runtime state (`local/`, `principal.json`, `server.lock`, …) out of git | In-project, committed |
 | `.okignore` | Paths excluded from the editor, search, and agents — see [Ignore patterns](/docs/features/ignore-patterns) | In-project, committed |
 | `.gitignore` (project root) | Seeded (with `.DS_Store`) **only** when `ok init` creates a new git repo | In-project, committed |
-| `.mcp.json`, `.cursor/mcp.json`, `.codex/config.toml`, `opencode.json` | Project-scoped MCP registration, one per detected editor (with `--scope project` or `both`) | In-project, committed |
-| `.claude/skills/`, `.cursor/skills/`, `.codex/skills/`, `.opencode/skills/` | Project-local "rich" OpenKnowledge skill (`SKILL.md`), one per detected editor | In-project, committed |
+| `.mcp.json`, `.cursor/mcp.json`, `.codex/config.toml`, `opencode.json` | Project-scoped MCP registration for all four project-capable editors (Claude, Cursor, Codex, OpenCode) regardless of what's installed — prepares the repo for teammates (with `--scope project` or `both`) | In-project, committed |
+| `.claude/skills/`, `.cursor/skills/`, `.codex/skills/`, `.opencode/skills/` | Project-local "rich" OpenKnowledge skill (`SKILL.md`) for the same four editors | In-project, committed |
+| `.ok/skill-targets.json` | Committed list of which editors receive skills, written when you customize the targets | In-project, committed |
 | `.claude/launch.json` | Configures Claude Code's preview pane to open the editor (on a local UI port, `39848`) | In-project, committed |
 
 With `--scope user` or `both` (the default), `ok init` also registers the `open-knowledge` MCP server in each detected editor's **user-level** config, so it's available in every project:
@@ -163,8 +174,11 @@ With `--scope user` or `both` (the default), `ok init` also registers the `open-
 | `~/.cursor/mcp.json` | Cursor | Outside-project (editor config) |
 | `~/.codex/config.toml` | Codex | Outside-project (editor config) |
 | `~/.config/opencode/opencode.json` | OpenCode | Outside-project (editor config) |
+| `~/.openclaw/openclaw.json` | OpenClaw (only when `~/.openclaw/` exists) | Outside-project (editor config) |
 
-`ok init` also installs the two user-global skills (`open-knowledge-discovery` and `open-knowledge-write-skill`), honoring any prior consent choice, and, if you choose **local-only** sharing, adds the OpenKnowledge paths to `.git/info/exclude` so `.ok/` stays off your remote.
+On Windows, Claude Desktop and OpenCode configs live under `%APPDATA%\Claude\` and `%APPDATA%\opencode\`, and the MCP entry is a PowerShell launcher.
+
+`ok init` also installs the two user-global skills (`open-knowledge-discovery` and `open-knowledge-write-skill`), honoring any prior consent choice, and, if you choose **local-only** sharing, adds the OpenKnowledge paths to `.git/info/exclude` so `.ok/` stays off your remote. Switch modes later with `ok config-sharing share` / `unshare` (`unshare` refuses if an OK config file is already tracked); `ok config-sharing status` prints the current mode and the excluded paths.
 
 <Callout type="info" title="Controlling it">
   - `--no-mcp` — scaffold `.ok/` only; register nothing with any editor.
@@ -186,7 +200,8 @@ With `--scope user` or `both` (the default), `ok init` also registers the `open-
 | `.ok/local/telemetry/spans-*.jsonl` | Local diagnostic spans, rotated at ~50 MB | In-project, gitignored |
 | `.ok/local/logs/server-*.jsonl` | Local server logs, rotated at ~25 MB | In-project, gitignored |
 | `.ok/local/cache/<branch>/backlinks.json` | Backlink-graph cache | In-project, gitignored |
-| `.git/ok/` | Shadow git repo holding per-writer work-in-progress refs (powers the timeline) | In-project, gitignored (inside `.git/`) |
+| `.ok/local/skill-management.json`, `.ok/local/installed-skills.json` | Skill-management toggle (`ok skills manage`) and per-project skill-install markers | In-project, gitignored |
+| `.git/ok/` — or `.git/worktrees/<name>/ok/` in a linked worktree, or the enclosing repo's `.git/ok-<slug>/` when your project is a subfolder of a larger repo | Shadow git repo holding per-writer work-in-progress refs (powers the timeline); always inside a git admin dir, never in your content tree | In-project, gitignored (inside `.git/`) |
 
 Diagnostic logs and telemetry are **on by default but local-only** — credential-bearing attributes are redacted (`[REDACTED]`) before anything is written, the files rotate at the size caps above, and nothing leaves the machine until you explicitly run `ok diagnose bundle`. Turn the local sink off with `telemetry.localSink.enabled: false`; see [Configuration](/docs/reference/configuration).
 
@@ -196,13 +211,13 @@ On each boot, `ok start` also runs **repair sweeps**: it re-checks a few things 
 | --- | --- | --- |
 | Existing `open-knowledge` MCP entries | The same editor configs `ok init` writes — **both** user-level (`~/.claude.json`, `~/.cursor/mcp.json`, …) and project-level | Outside-project (editor config) **and** in-project |
 | `.claude/launch.json` | Your project | In-project, committed |
-| OpenKnowledge skill files | Project (`.claude/skills/…`) and user-global (`~/.agents/skills/…`) | In-project **and** outside-project (home dir) |
+| OpenKnowledge skill bundles (`open-knowledge-discovery`, `open-knowledge-write-skill`) | Project (`.claude/skills/…`) and user-global — `~/.agents/skills/` plus each detected editor's `~/.claude/skills/`, `~/.cursor/skills/`, `~/.codex/skills/`, `~/.opencode/skills/` | In-project **and** outside-project (home dir) |
 
 Disable all three with `OK_RECLAIM_DISABLE=1`.
 
 ### `ok mcp`
 
-`ok mcp` is the stdio bridge your editor spawns to talk to the server. It **writes nothing to disk** — it routes tool calls to a running `ok start` backend (starting one on the first write).
+`ok mcp` is the stdio bridge your editor spawns to talk to the server. It **writes nothing to disk** — it routes tool calls to a running `ok start` backend (starting one on the first tool call that needs it — reads included).
 
 ### Home directory and credentials (`~/.ok/`)
 
@@ -212,10 +227,12 @@ Disable all three with `OK_RECLAIM_DISABLE=1`.
 | `~/.ok/secrets.yml` | Embeddings provider API key for [semantic search](/docs/reference/configuration#semantic-search), if you set one. Written `0600`; never in `config.yml` | **Yes** (`0600`) |
 | `~/.ok/auth.yml` | Auth-token fallback, used when no OS credential store is reachable. Written `0600` | **Yes** (`0600`) |
 | `~/.ok/skill-state.yml`, `~/.ok/skill-install-events.jsonl` | Skill-install bookkeeping | No |
+| `~/.ok/skills/<name>/` | Your global-scope authored skills (kept by `ok uninstall` unless `--purge-content`) | No |
 | `~/.ok/stats.jsonl` | Local "open with AI" handoff stats — local-only, no phone-home | No |
-| `~/.ok/bug-reports/` | Generated diagnostic bundles (`ok diagnose` / `ok bug-report`) | No |
+| `~/.ok/logs/` | CLI logs (`cli.<date>.log`), size- and age-capped | No |
+| `~/.ok/bug-reports/` | Bug-report bundles from `ok bug-report` (`ok diagnose bundle` writes into the project, under `.ok/local/diagnostics/`) | No |
 
-**Auth tokens** (for GitHub sync, sharing, and cloning) are stored in your operating system's secure credential store when one is available — the macOS **Keychain** on an Intel Mac (service `open-knowledge`), or the platform equivalent — falling back to a `0600` `~/.ok/auth.yml` file on headless systems (a Linux server, CI) where none is reachable.
+**Auth tokens** (for GitHub sync, sharing, and cloning) are stored in your operating system's secure credential store when one is available — the macOS **Keychain** (service `open-knowledge`), or the platform equivalent (Windows Credential Manager, Linux Secret Service) — falling back to a `0600` `~/.ok/auth.yml` file on headless systems (a Linux server, CI) where none is reachable.
 
 </Tab>
 
@@ -234,18 +251,19 @@ Disable all three with `OK_RECLAIM_DISABLE=1`.
 | Local diagnostic logs and telemetry | `telemetry.localSink.enabled: false` in config |
 | Auto-starting the MCP server | `OK_MCP_AUTOSTART=0` |
 
-To review or reverse the footprint after the fact, `ok diagnose` reports what's on disk, and the desktop `path-install.json` records exactly which shell/`PATH` changes were made.
+To review the footprint after the fact, `ok diagnose` reports what's on disk (and the desktop `path-install.json` records exactly which shell/`PATH` changes were made). To reverse it, `ok deinit` removes OpenKnowledge from one project and `ok uninstall` removes it from the whole machine — both keep your markdown content (and your authored `~/.ok/skills`) unless you pass `--purge-content`, and both take `--dry-run` to preview. See the [CLI reference](/docs/reference/cli) for the full semantics.
 
 ## What leaves your machine
 
-By default, **nothing.** Everything above is written to your own disk. The only ways data leaves your machine are these — all opt-in or on-demand, except the desktop app's update check, which is automatic:
+By default, **nothing.** Everything above is written to your own disk. The only ways data leaves your machine are these — all opt-in or on-demand, except two automatic desktop-app actions (the update check, and a one-time share-link check on first launch):
 
 | What | When | Where it goes |
 | --- | --- | --- |
 | Diagnostic bundle | Only when you run `ok diagnose bundle` (you can inspect it first) | Wherever you send it |
 | Semantic search embeddings | Only when you enable [semantic search](/docs/reference/configuration#semantic-search) **and** set a key — off by default | Your configured embeddings provider (OpenAI by default) |
 | GitHub sync / share | When you sync, clone, publish, or share | GitHub |
-| Update check | Automatically, on desktop-app launch | OpenKnowledge releases feed (GitHub) |
+| Update check | Automatically — on launch and periodically while the desktop app runs | OpenKnowledge update service (`openknowledge.ai/updates`), which redirects to GitHub; sends the app version and channel |
+| First-launch share check | Once, automatically, on the desktop app's first launch | `openknowledge.ai/continue` — redeems a share link if you installed from one |
 | npm/`npx` fetch | During install (CLI) | The npm registry |
 
 Local diagnostic logs and telemetry are scrubbed of credential-bearing attributes and never sent anywhere on their own.

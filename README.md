@@ -22,7 +22,7 @@
   <a href="https://discord.com/invite/YujKpFN49">Discord</a>
 </div>
 
-</br>
+<br/>
 
 <img
   src="assets/hero.webp"
@@ -36,22 +36,22 @@
 Highlights:
 - Full true **WYSIWYG** so that editing markdown files feels like editing a Google Doc or Notion page. 
 - **macOS app** and **web UI** with file navigator, search, tabs, graph wiki link viewer, and more. 
-- Collaborative **AI-editing** with **Claude, Codex, and Cursor desktop apps**. Can be used with any harness/agent via MCP/CLI, like OpenCode.
+- Collaborative **AI-editing** with **Claude, Codex, Cursor, and OpenCode**. Can be used with any harness/agent via MCP/CLI.
 - Out-of-the-box **MCP**, **skills**, and **agentic search** for LLM Wikis, agent second brains, and knowledge graphs.
 - No-code **Team sharing** and **Auto-sync** powered by git/GitHub under the hood.
 - **Embeddable HTML** and rich components for writing engineering specs and visualized reports.
-- A **built-in TUI** in the Desktop app and a Web UI for users who prefer terminals.
+- A **built-in TUI** in the macOS app for users who prefer terminals.
 
 ## Install
 
 **macOS:** download the desktop app — open the DMG, drag **OpenKnowledge** to **Applications**, and launch it. [Latest release](https://github.com/inkeep/open-knowledge/releases/latest).
 
-**Linux, Windows, Intel Mac:** run the same editor as a local web app via the CLI ([Node.js 24+](https://nodejs.org) required):
+**Linux, Windows, Intel Mac:** run the same editor as a local web app via the CLI ([Node.js 24+](https://nodejs.org) and git required):
 
 ```bash
 npm install -g @inkeep/open-knowledge
 cd your-project
-ok init          # scaffold the project + wire up Claude Code, Cursor, and Codex
+ok init          # scaffold the project + wire up your AI editors (Claude Code, Claude Desktop, Cursor, Codex, OpenCode, OpenClaw)
 ok start --open  # serve the web editor and open it in your browser
 ```
 

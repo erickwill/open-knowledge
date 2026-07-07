@@ -8,7 +8,7 @@ A **software lifecycle** knowledge base is where an engineering team's thinking 
 ```html preview
 <div style="padding:18px">
   <div id="flow" style="display:flex;flex-wrap:wrap;gap:8px;align-items:stretch"></div>
-  <div class="cap">Each stage is a folder of markdown. The arrows are links the agent maintains, so a spec always points back to the decision that authorized it.</div>
+  <div class="cap">Each stage is a folder of markdown. The arrows are links the agent maintains, so a spec always points back to the proposal it implements.</div>
 </div>
 <style>
 #flow .node{flex:1;min-width:118px;border:1px solid var(--border);border-radius:12px;padding:11px 13px;background:var(--card);transition:box-shadow .3s,border-color .3s;cursor:pointer}
@@ -40,7 +40,7 @@ if(!matchMedia("(prefers-reduced-motion:reduce)").matches){setInterval(function(
 </script>
 ```
 
-The stages are the standard artifacts an engineering org already produces — RFCs, ADRs, specs, blameless postmortems, runbooks — but here they live as linked markdown an agent reads and writes alongside you, not as scattered Google Docs, Notion pages, and Slack threads that nobody can trace six months later.
+The stages are the standard artifacts an engineering org already produces — RFCs, ADRs, specs, blameless postmortems, runbooks — but here they live as linked markdown an agent reads and writes alongside you, not scattered across Google Docs, Notion pages, and Slack threads that are hard to trace six months later.
 
 Engineering leads get every proposal, decision, and spec in one linked graph, with the agent surfacing what supersedes what, so design docs stop rotting across scattered tools. OSS maintainers give contributors the *why* behind the code — in accepted proposals and frozen ADRs — instead of leaving them to do archaeology through closed PRs. On-call engineers get postmortems that link to each other and stub the follow-up guides automatically, so recurring incidents become visible instead of quietly repeating.
 
@@ -57,7 +57,7 @@ postmortems/  blameless incident write-ups
 guides/       how-to / onboarding / runbooks — referenced throughout
 ```
 
-The pack ships a template for each: `proposal`, `decision`, `spec` / `plan` / `tasks` (the [GitHub spec-kit](https://github.com/github/spec-kit) three-file shape), `postmortem`, and `guide` / `onboarding-guide` / `runbook`. Templates carry only structure; what each section is for is taught to the agent by the folder itself, so document bodies stay clean.
+The pack ships a template for each: `proposal`, `decision`, `spec` / `spec-plan` / `spec-tasks` (the [GitHub spec-kit](https://github.com/github/spec-kit) three-file shape), `postmortem`, and `guide` / `onboarding-guide` / `runbook`. Templates carry only structure; what each section is for is taught to the agent by the folder itself, so document bodies stay clean.
 
 ## The scenario
 
@@ -65,7 +65,7 @@ Your team is deciding whether to move the job queue off Postgres onto a dedicate
 
 1. An engineer writes `proposals/0007-dedicated-job-broker.md` — motivation, design, drawbacks, alternatives, unresolved questions. Status `draft`.
 2. After review it reaches `fcp` (final comment period), then `accepted`. The agent graduates it into `decisions/0007-adopt-nats-for-jobs.md`, a frozen ADR that links back to the proposal.
-3. Implementation gets a `specs/007-job-broker/` folder — `spec.md`, `plan.md`, `tasks.md` — referencing the parent decision.
+3. Implementation gets a `specs/007-job-broker/` folder — `spec.md`, `plan.md`, `tasks.md` — referencing the parent proposal.
 4. Three weeks post-ship the broker drops messages under load. `postmortems/2026-07-14-job-broker-message-loss.md` captures the timeline and root cause, and the agent surfaces a `Related:` link to an older queue postmortem that shares the subsystem.
 
 Nothing here is new to your team. What's new: it's all one linked graph an agent can read back to you, and the links stay correct because the agent maintains them.
@@ -78,22 +78,21 @@ Pick **Software lifecycle** in the starter-pack picker, or run:
 ok seed --pack software-lifecycle
 ```
 
-By default the pack nests everything under a `project-docs/` subfolder:
+By default the pack scaffolds everything at the project root:
 
 ```
 your-project/
-└── project-docs/
-    ├── proposals/       0001-feature-name.md …
-    ├── decisions/       NNNN-title.md (ADRs)
-    ├── specs/           NNN-name/{spec,plan,tasks}.md
-    ├── postmortems/     YYYY-MM-DD-name.md
-    └── guides/          how-to / onboarding / runbooks
+├── proposals/       0001-feature-name.md …
+├── decisions/       NNNN-title.md (ADRs)
+├── specs/           NNN-name/{spec,plan,tasks}.md
+├── postmortems/     YYYY-MM-DD-name.md
+└── guides/          how-to / onboarding / runbooks
 ```
 
 Each folder carries an `.ok/frontmatter.yml` description the agent reads on every directory listing, plus its templates under `.ok/templates/`. That description is where the workflow lives — so the agent knows an accepted proposal graduates to `decisions/`, that ADRs freeze once accepted, and that a new decision superseding an old one links back via `Supersedes:`.
 
 <Callout type="info" title="Seeding also installs a skill">
-  `ok seed --pack software-lifecycle` installs the **Software lifecycle** project skill into your agent editors (Claude Code, Cursor, Codex, OpenCode). It's the "how to work here" guidance behind the behaviors below — the status flows, the `Supersedes:` scanning, the postmortem follow-ups — read automatically, and editable like any other doc. It lands as a real `SKILL.md` committed to your repo, one per detected editor. See [Skills](../features/skills.mdx) and [what OpenKnowledge writes to disk](../reference/what-open-knowledge-writes.mdx).
+  `ok seed --pack software-lifecycle` installs the **Software lifecycle** project skill into your agent editors (Claude Code, Cursor, Codex, OpenCode). It's the "how to work here" guidance behind the behaviors below — the status flows, the `Supersedes:` scanning, the postmortem follow-ups — read automatically, and editable like any other doc. It lands as a real `SKILL.md` in your repo under `.ok/skills/`, symlinked into each editor's skills directory. See [Skills](../features/skills.mdx) and [what OpenKnowledge writes to disk](../reference/what-open-knowledge-writes.mdx).
 </Callout>
 
 ## What the agent does for you
@@ -111,7 +110,7 @@ The pack teaches the agent behaviors you'd otherwise have to remember. _They're 
 
 ### 1. Seed the pack
 
-In a fresh project, open the starter-pack picker and choose **Software lifecycle** (or run `ok seed --pack software-lifecycle`). Confirm the subfolder — leave `project-docs/` or point it at wherever your team's docs live.
+In an initialized project (run `ok init` first — see the [quickstart](../get-started/quickstart.mdx)), open the starter-pack picker and choose **Software lifecycle** (or run `ok seed --pack software-lifecycle`). To nest everything under a subfolder — `project-docs/` or wherever your team's docs live — select **In a subfolder** in the picker or pass `--root project-docs`.
 
 ### 2. Write the first proposal
 
@@ -129,7 +128,7 @@ The agent writes the frozen record and — per the pack behavior — checks the 
 
 ### 4. Derive the spec
 
-<CopyPrompt>Create an implementation spec for the accepted broker decision under specs/, using the spec / plan / tasks templates. Reference the parent decision.</CopyPrompt>
+<CopyPrompt>Create an implementation spec for the accepted broker decision under specs/, using the spec / spec-plan / spec-tasks templates. Reference the parent proposal.</CopyPrompt>
 
 ### 5. Write postmortems as incidents happen
 

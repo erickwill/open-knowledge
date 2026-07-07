@@ -1,9 +1,10 @@
 ---
 title: Supporting the Open Knowledge Format
+sidebarTitle: Open Knowledge Format
 icon: LuFileCode
 description: "Start a knowledge base that already follows Google's Open Knowledge Format, so any OKF tool can read it later. You get the right setup out of the box, and you're still free to write however you like."
 ---
-Open Knowledge ships a starter pack named **`okf`** that scaffolds a knowledge base **conformant with Google's [Open Knowledge Format (OKF)](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) from the first commit** — without enforcing anything. You get a portable, OKF-ready bundle out of the box, and you stay free to author however you like.
+OpenKnowledge ships a starter pack named **`okf`** that scaffolds a knowledge base **conformant with Google's [Open Knowledge Format (OKF)](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md) from the first commit** — without enforcing anything. You get a portable, OKF-ready bundle out of the box, and you stay free to author however you like.
 
 <Callout type="info">
   **OKF here means Google's Open Knowledge _Format_** — a vendor-neutral file-format spec (a directory of markdown files with YAML frontmatter), announced by Google Cloud in June 2026. Read the [OKF v0.1 spec](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md).
@@ -39,14 +40,14 @@ The point is portability from day one: a knowledge base you can hand to any tool
 
 ## What the pack seeds
 
-Run it with `ok seed --pack okf`. It scaffolds:
+In an initialized project (`ok init` first), pick **Open Knowledge Format** in the starter-pack picker (behind **Show more**), or run `ok seed --pack okf`. It scaffolds:
 
 | Path | Purpose | Template |
 |---|---|---|
 | `concepts/` | Durable ideas and definitions | `concept` |
 | `references/` | External sources and citations | `reference` |
 | `notes/` | Working notes and observations | `note` |
-| `welcome.md` | A real typed concept, so a strict OKF consumer has something to accept | — (seeded file) |
+| `welcome.md` | A real typed document (`type: Document`), so a strict OKF consumer has something to accept | — (seeded file) |
 | `index.md` | Reserved OKF navigation hub | — (reserved) |
 | `log.md` | Reserved OKF change history | — (reserved) |
 
@@ -56,9 +57,9 @@ Each of the three content folders (`concepts/`, `references/`, `notes/`) ships i
 
 This is the key design decision. OKF asks exactly one thing of every **non-reserved** document: a **non-empty `type`** in its frontmatter. Reserved `index.md` / `log.md` stay frontmatter-free, and links are standard markdown.
 
-The pack bakes those habits into the seeded content and documents them — but it changes nothing about how Open Knowledge itself behaves:
+The pack bakes those habits into the seeded content and documents them — but it changes nothing about how OpenKnowledge itself behaves:
 
-- Open Knowledge's native frontmatter schema stays **open-shaped**.
+- OpenKnowledge's native frontmatter schema stays **open-shaped**.
 - Nothing is **linted** for OKF conformance.
 
 So three habits are all it takes to keep the KB handable to a strict OKF consumer as it grows:
@@ -67,7 +68,7 @@ So three habits are all it takes to keep the KB handable to a strict OKF consume
 2. `index.md` / `log.md` stay lowercase and frontmatter-free.
 3. Links use standard markdown (`[text](./path.md)`).
 
-Open Knowledge also accepts `[[wiki-link]]` shorthand as a native superset, and the OKF export normalizes it to standard links — but seeded content uses standard links so the bundle is conformant as-is.
+OpenKnowledge also accepts `[[wiki-link]]` shorthand as a native superset, but nothing normalizes it to standard links — seeded content uses standard links so the bundle is conformant as-is.
 
 ## Cadence
 
@@ -77,11 +78,11 @@ Three habits keep the bundle handable to a strict OKF consumer as it grows. The 
 |---|---|
 | Creating a doc | Use **New from template** — it sets `type` for you |
 | Reserved files | Keep `index.md` / `log.md` lowercase and frontmatter-free |
-| Links | Use standard markdown links; `[[wiki-link]]` shorthand normalizes on export |
+| Links | Use standard markdown links; `[[wiki-link]]` shorthand stays as written |
 | Handing it off | Nothing special — the bundle is conformant as you go |
 
 ## Further reading
 
 - **[Open Knowledge Format spec](https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md)** — the canonical OKF v0.1 specification (Google Cloud).
 - **[`STARTER_PACKS` registry](https://github.com/inkeep/open-knowledge/blob/main/packages/server/src/seed/starter.ts)** — canonical source for the `okf` pack content.
-- **[Karpathy's LLM wiki workflow](./karpathy-llm-wiki.mdx)** and **[Entity vault workflow](./entity-vault.mdx)** — other starter-pack-driven workflows in Open Knowledge.
+- **[Karpathy's LLM wiki workflow](./karpathy-llm-wiki.mdx)** and **[Entity vault workflow](./entity-vault.mdx)** — other starter-pack-driven workflows in OpenKnowledge.

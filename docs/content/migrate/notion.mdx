@@ -4,7 +4,7 @@ description: How to export a Notion workspace to Markdown and open it in OpenKno
 icon: LuFileInput
 ---
 
-This guide will cover exporting your Notion workspace to markdown files so that you can access them from OpenKnowledge. There are several key differences between OpenKnowledge and Notion that make this export incomplete and those will be covered here.
+This guide will cover exporting your Notion workspace to markdown files so that you can access them from OpenKnowledge. OpenKnowledge and Notion differ in a few key ways, so a Notion export needs some cleanup — this guide covers what carries over and what to fix.
 
 ## Install OpenKnowledge
 
@@ -42,10 +42,10 @@ ok migrate notion /path/to/unzipped-export --apply
 ```
 
 <Callout type="info">
-  The desktop app installs the CLI automatically the
-  first time you launch it. If `ok` isn't found: make sure you've opened the
-  OpenKnowledge app at least once, then open a new terminal window. If it's still missing, add
-  `$HOME/.ok/bin` to your `PATH` manually.
+  The desktop app installs the CLI to `$HOME/.ok/bin`; a pre-checked toggle in
+  its first-launch dialog puts `ok` on your `PATH`. If `ok` isn't found, add it
+  from **File → Set up OpenKnowledge integrations…**, then open a new terminal
+  window. If it's still missing, add `$HOME/.ok/bin` to your `PATH` manually.
 </Callout>
 
 Every transform is **idempotent**, so re-running is safe. See the tables below for a full list of differences between the Notion export and what OpenKnowledge supports.

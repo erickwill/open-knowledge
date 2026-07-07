@@ -70,10 +70,10 @@ You write it with your agent over a few sessions — every revision captured in 
 Pick **Writing pipeline** in the starter-pack picker, or run:
 
 ```bash
-ok seed --pack writing-pipeline
+ok seed --pack writing-pipeline --root writing
 ```
 
-By default the pack nests under a `writing/` subfolder:
+The picker pre-fills the `writing/` subfolder; `--root writing` does the same from the CLI (omit it to scaffold at the project root):
 
 ```
 your-project/
@@ -86,7 +86,7 @@ your-project/
 Each folder carries its `.ok/frontmatter.yml` guidance and templates. If a draft needs research notes, the agent creates `drafts/<slug>/research/` on demand rather than cluttering the top level.
 
 <Callout type="info" title="Seeding also installs a skill">
-  `ok seed --pack writing-pipeline` installs the **Writing pipeline** project skill into your agent editors (Claude Code, Cursor, Codex, OpenCode). It's the "how to work here" guidance behind the behaviors below — the stage promotions, the idle-draft nudges, the publish-time URL fill — read automatically, and editable like any other doc. It lands as a real `SKILL.md` committed to your repo, one per detected editor. See [Skills](../features/skills.mdx) and [what OpenKnowledge writes to disk](../reference/what-open-knowledge-writes.mdx).
+  `ok seed --pack writing-pipeline` installs the **Writing pipeline** project skill into your agent editors (Claude Code, Cursor, Codex, OpenCode). It's the "how to work here" guidance behind the behaviors below — the stage promotions, the idle-draft nudges, the publish-time URL fill — read automatically, and editable like any other doc. It lands as a single `SKILL.md` under `.ok/skills/`, committed to your repo and symlinked into each detected editor's skills directory. See [Skills](../features/skills.mdx) and [what OpenKnowledge writes to disk](../reference/what-open-knowledge-writes.mdx).
 </Callout>
 
 ## What the agent does for you
@@ -106,7 +106,7 @@ _These behaviors are encoded in the pack skill and run **when you prompt the age
 | --- | --- |
 | Whenever a premise strikes | One line into `ideas/`. That's the whole capture step |
 | When you commit to a piece | Promote the idea into `drafts/`; write with your agent, revisions tracked automatically |
-| On ship | Move to `published/`; let the agent fill `canonical_url` and `channel` |
+| On ship | Move to `published/`; let the agent fill `canonical_url` |
 | To revise a published piece | Copy it back to a new draft — never edit `published/` in place |
 | Monthly | Ask the agent to surface stale ideas and stalled drafts |
 
@@ -115,4 +115,4 @@ _These behaviors are encoded in the pack skill and run **when you prompt the age
 - **[LLM wiki workflow](./karpathy-llm-wiki.mdx).** If your writing is source-grounded research rather than original prose, the source-curation posture fits better.
 - **[Editor](../features/editor.mdx).** The WYSIWYG surface you'll actually draft in.
 - **[Timeline and recovery](../features/timeline-and-recovery.mdx).** Where your draft revisions live — the reason there are no named-revision folders.
-- **[Claude Code](../integrations/claude-code.mdx)**, **[Cursor](../integrations/cursor.mdx)**, **[Codex](../integrations/codex.mdx).** MCP-capable agent hosts.
+- **[Claude Code](../integrations/claude-code.mdx)**, **[Cursor](../integrations/cursor.mdx)**, **[Codex](../integrations/codex.mdx)**, **[OpenCode](../integrations/opencode.mdx).** MCP-capable agent hosts.

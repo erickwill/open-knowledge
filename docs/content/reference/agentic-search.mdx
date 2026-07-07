@@ -191,7 +191,7 @@ set("ok");
 
 That folder briefing is why the loop stays short: the backlinks are what it follows, and the purpose plus recency tell it where to look next.
 
-Three read tools ride this layer: ranked **search** (BM25 and recency, the same index as cmd-K), **`exec`** (sandboxed `grep`/`ls`/`cat`, straight off disk, works with the server down), and the **link graph** (`dead`, `orphans`, `hubs`, `suggest`).
+Three read tools ride this layer: ranked **search** (BM25 and recency, the same index as cmd-K), **`exec`** (sandboxed `grep`/`ls`/`cat`/`find` and friends, pipeable, straight off disk; works with the server down, minus backlinks and outbound links), and **`links`** (the link graph: `backlinks`, `forward`, `dead`, `orphans`, `hubs`, `suggest`). `search` takes an `intent` (`omnibar` for fast title/path/folder lookups; the default `full_text` ranks body content too), result `scopes`, and a `limit` (default 20, max 100). Right after the server boots it can answer `ready: false` with empty results while the index builds; retry after a couple of seconds instead of treating that as no matches, and fall back to `exec` grep if it persists.
 
 ## Writing talks back too
 
@@ -240,13 +240,13 @@ set("ok");
 </script>
 ```
 
-`brokenLinks` comes back on every write and edit (empty when they all resolve), so the agent never needs a follow-up dead-link check. A brand-new doc nothing points to comes back flagged as an orphan with a hub to link it from. Every write and edit is versioned, attributed, and the preview updates as it lands. None of that happens when you append to a file by hand. [Skills](../features/skills.mdx) teach the conventions, and the write path enforces the connective tissue.
+`brokenLinks` comes back on every write and edit (empty when they all resolve), so the agent never needs a follow-up dead-link check. A brand-new doc nothing points to comes back flagged as an orphan with a hub to link it from. Every write and edit is versioned, attributed, and the preview updates as it lands. Append to a file by hand and the edit still lands: the file watcher folds it into the live doc and versions it, but anonymously, as `file-system`, and nothing talks back. [Skills](../features/skills.mdx) teach the conventions, and the write path enforces the connective tissue.
 
 ## The index is authored, not extracted
 
-No vector store means no second copy to rebuild, mis-chunk, or drift. Your links, folders, titles, and folder descriptions *are* the index. Other tools extract structure with an embedding model or an entity-guessing LLM; OpenKnowledge reads the structure you already wrote, so the agent traverses the source of truth. A well-linked base retrieves better because good links shorten the loop. [Folder templates](../advanced/folders-and-templates.mdx) keep that structure consistent as it grows: a folder can carry a template, so every new doc the agent creates starts with the same frontmatter and shape, and the fields search ranks on stay uniform.
+No vector store means no second copy to rebuild, mis-chunk, or drift. Your links, folders, titles, and folder descriptions *are* the index. Other tools extract structure with an embedding model or an entity-extracting LLM; OpenKnowledge reads the structure you already wrote, so the agent traverses the source of truth. A well-linked base retrieves better because good links shorten the loop. [Folder templates](../advanced/folders-and-templates.mdx) keep that structure consistent as it grows: a folder can carry a template that the write path surfaces at create time, so docs the agent starts from it share the same frontmatter and shape, and the fields search ranks on stay uniform.
 
 ## Semantic search (optional)
 
-Off by default. Enable it per project and an embeddings signal blends into the ranking; it never replaces lexical search. Vectors sit in a local cache. Turning it on sends your query and matching text to your configured provider. See [Configuration](./configuration.mdx).
+Off by default. Enable it per project, per machine (each collaborator opts in on their own), and an embeddings signal blends into the ranking; it never replaces lexical search. Vectors sit in a local cache. Turning it on sends your query and matching text to your configured provider. See [Configuration](./configuration.mdx).
 

@@ -1,22 +1,28 @@
 /**
- * Persistent "Ask AI" composer docked as a slim single-line field directly
- * above the editor footer (and above the docked terminal when it is open).
+ * "Ask AI" composer docked as a slim single-line field above the editor
+ * footer. Mounted in two modes (`bottom-composer-gate.ts` holds both
+ * predicates): for the open doc via `shouldShowBottomComposer` — desktop app
+ * and browser alike, hidden while the docked terminal owns the bottom of the
+ * column and inside embedded AI webviews — and by the folder overview via
+ * `shouldShowFolderComposer` (same gates, no doc-open requirement). In doc
+ * mode it renders as an absolute overlay and the editor content is inset by
+ * `--ask-composer-height`; in folder mode it is an in-flow field below the
+ * folder list.
  *
- * It is always present while a doc is open — a short, single-line input at rest
- * that auto-grows as the instruction spans multiple lines, wrapped in a rounded
- * card that owns the focus ring. It carries a segmented "Ask <agent>" send
- * control (the shared `AgentSplitButton`: primary submit + joined agent-picker
- * chevron), a rotating-suggestion placeholder that cross-fades between prompts
- * while empty, and the ⌘L focus shortcut. Because it is an in-flow flex child of
- * the editor column (not a floating overlay), the terminal dock pushes it up as
- * it expands instead of overlapping it.
+ * A short, single-line input at rest that auto-grows as the instruction spans
+ * multiple lines, wrapped in a rounded card that owns the focus ring. It
+ * carries a segmented "Ask <agent>" send control (the shared
+ * `AgentSplitButton`: primary submit + joined agent-picker chevron), a
+ * rotating-suggestion placeholder that cross-fades between prompts while
+ * empty, and the ⌘L focus shortcut.
  *
  * Submitting dispatches the typed instruction to the resolved default agent
- * (first installed, or the user's sticky pick) scoped to the current doc, via
- * the shared handoff plumbing (`useHandoffDispatch` -> ask-scope input ->
- * `composeAskPrompt`). Picking a Terminal CLI (Claude / Codex / Cursor) hands
- * the composed prompt to the docked terminal instead of a deep-link dispatch —
- * injecting into a matching idle session if one is open, else a new tab.
+ * (first installed, or the user's sticky pick) scoped to the current doc or
+ * folder, via the shared handoff plumbing (`useHandoffDispatch` -> ask-scope
+ * input -> `composeAskPrompt`). Picking a Terminal CLI (Claude / Codex /
+ * OpenCode / Cursor) hands the composed prompt to the docked terminal instead
+ * of a deep-link dispatch — always in a new terminal tab (reusing a live
+ * shell is exclusively the selection-bubble path).
  */
 
 import {

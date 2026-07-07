@@ -98,7 +98,7 @@ const PATHS: Path[] = [
   {
     href: '/docs/integrations/claude-code',
     title: 'Setting up an editor?',
-    desc: 'Use with Claude, Cursor, Codex, or OpenCode.',
+    desc: 'Use with Claude, Cursor, Codex, OpenCode, or OpenClaw.',
   },
   {
     href: '/docs/workflows/karpathy-llm-wiki',

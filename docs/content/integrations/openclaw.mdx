@@ -10,9 +10,9 @@ OpenClaw is an agent gateway: it runs agents that connect to MCP servers. Once O
 
 <McpInstall editor="OpenClaw">
   <p>
-    After <code>ok init</code> writes the config, run <code>openclaw mcp reload</code> so active
-    agents pick up the entry — <code>ok start</code> isn't needed here, since OpenClaw manages its
-    own server lifecycle.
+    After <code>ok init</code> writes the config, restart the OpenClaw gateway so running agents
+    pick up the entry — <code>openclaw mcp reload</code> refreshes the current CLI process only.
+    <code>ok start</code> isn't needed here, since OpenClaw manages its own server lifecycle.
   </p>
 </McpInstall>
 
@@ -39,14 +39,14 @@ Unrelated config-health or plugin-version warnings for *other* servers don't blo
 
 <VerifyExec subject="OpenClaw" />
 
-If the agent doesn't see the tool, run tool discovery — some runtimes lazy-load MCP tools and only surface them after a search, so absence from the initial list means "not discovered yet," not "not registered" — then `openclaw mcp reload`.
+If the agent doesn't see the tool, run tool discovery — some runtimes lazy-load MCP tools and only surface them after a search, so absence from the initial list means "not discovered yet," not "not registered" — then restart the gateway.
 
 ## Initialize a knowledge base
 
 `ok init` turns a folder into a knowledge base (and, on the same run, registers the MCP server above):
 
 ```bash
-ok init /path/to/your/knowledge-base
+cd /path/to/your/knowledge-base && ok init
 ```
 
 <Callout type="warn">
@@ -62,7 +62,7 @@ A copy-pasteable, end-to-end check that proves the whole stack — not just "the
 <Step>
 ### Discover the tools
 
-If `mcp__open-knowledge__*` isn't in the agent's tool list, run tool discovery first — absence from the initial list means "not discovered yet," not "not registered."
+If the `open-knowledge` server's tools aren't in the agent's tool list, run tool discovery first — absence from the initial list means "not discovered yet," not "not registered."
 </Step>
 
 <Step>
@@ -105,7 +105,7 @@ Write and edit responses include a route-only preview path like `/#/notes/mcp-ro
 
 ## Agent contract
 
-`ok init` installs the **OpenKnowledge skill** — the authoritative agent contract for tool use, grounding, and linking — and OpenClaw loads installed skills from `~/.agents/skills/`. Rather than restate the contract here, two OpenClaw-specific reminders:
+The **OpenKnowledge skill** — the authoritative agent contract for tool use, grounding, and linking — is project-scoped, written for Claude, Cursor, Codex, and OpenCode; OpenClaw has no project skill directory to receive it. The bundles OpenKnowledge installs to `~/.agents/skills/` (which OpenClaw loads) cover discovery and skill authoring, not tool use — so for OpenClaw agents, the contract is these two reminders:
 
 - **Markdown is MCP-owned.** Inside an OK project, read and write `.md` / `.mdx` through OK's tools (`exec`, `search`, `write`, `edit`, `links`), not native shell or file tools — native access loses attribution and skips the frontmatter, backlinks, and history OK returns.
 - **Discover before concluding the MCP is missing.** Not seeing `exec` in the initial tool list isn't the escape hatch; run tool discovery first.
@@ -117,9 +117,9 @@ For the complete tool surface, see the [MCP reference](/docs/reference/mcp).
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | `ok init` showed OpenClaw as `config root missing; skipped` | `~/.openclaw/` doesn't exist yet, so OpenClaw wasn't detected | Launch OpenClaw once (it creates its home directory), then re-run `ok init` |
-| `ok init` reported the config was `left unchanged` | OpenKnowledge couldn't safely parse `~/.openclaw/openclaw.json` | Fix the JSON and re-run `ok init` |
+| `ok init` reported the config was `left unchanged` | OpenKnowledge declined to edit `~/.openclaw/openclaw.json` for the reason shown in parentheses | Fix what the reason names (invalid JSON, a duplicated server block, an oversize config), then re-run `ok init` |
 | `openclaw mcp probe` shows 0 tools | server couldn't launch, or the folder isn't a KB yet | Confirm `ok` is installed (desktop app or `npm i -g @inkeep/open-knowledge`), and `ok init` the folder |
-| Agent doesn't see `mcp__open-knowledge__*` | MCP tools lazy-loaded | Run tool discovery, then `openclaw mcp reload` |
+| Agent doesn't see the `open-knowledge` tools | MCP tools lazy-loaded, or the agent's process predates the entry | Run tool discovery, then restart the gateway |
 | `ok init` "refreshed" a parent project, no new KB | upward project resolution | Run `ok init` outside any existing `.ok` tree |
 | Broken-link warning on a just-written doc | forward link to a not-yet-created target | Create the target, then re-check `links({ kind: "dead" })` |
 | `write` / `edit` -> "Hocuspocus server is not running" | OK server not started | Run `ok start` (or leave the desktop app running) and retry |

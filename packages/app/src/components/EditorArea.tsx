@@ -903,10 +903,12 @@ function EditorAreaInner({
       requestAddProperty(activeDocName);
     }
 
-    // The "Ask AI" composer — a slim in-flow field docked below the editor
-    // (above the footer, and above the terminal when it is open). It takes real
-    // layout space, so the terminal dock pushes it up as it expands and it never
-    // overlaps content; no scroll-inset reservation is needed.
+    // Visibility for the open doc's "Ask AI" composer — the pure gate in
+    // bottom-composer-gate.ts (hidden while the docked terminal is open, in
+    // embedded webviews, and with no doc open). The folder overview mounts its
+    // own instance under shouldShowFolderComposer. Positioning and the
+    // --ask-composer-height scroll inset are documented at the render site
+    // below.
     const showBottomComposer = shouldShowBottomComposer({
       terminalVisible,
       isEmbedded,

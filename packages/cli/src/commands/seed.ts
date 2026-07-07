@@ -28,8 +28,7 @@ interface SeedCommandOptions {
   cwd?: string;
   /**
    * Subfolder (relative to `cwd`) where the chosen starter pack is
-   * scaffolded. `.` / `''` scaffolds at the project root (historical behavior).
-   * When omitted and stdin is a TTY, the user is prompted interactively.
+   * scaffolded. `.` / `''` — or omitting it — scaffolds at the project root.
    */
   root?: string;
   /**
@@ -250,7 +249,7 @@ export function seedCommand(): Command {
     )
     .option(
       '-r, --root <path>',
-      'Subfolder (relative to the project dir) to scaffold into — created if missing. Defaults to the project root when omitted in non-interactive runs; prompts on a TTY.',
+      'Subfolder (relative to the project dir) to scaffold into — created if missing. Defaults to the project root.',
     )
     .option('--list-packs', 'List available starter packs and exit.')
     .option('-y, --yes', 'Skip confirmation prompt')
