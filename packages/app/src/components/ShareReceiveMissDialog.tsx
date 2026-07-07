@@ -50,7 +50,7 @@ export function ShareReceiveMissDialog() {
 }
 
 function ShareReceiveMissDialogInner({ nav }: { nav: PendingReceiveNav }) {
-  const state = useShareTargetVerdict(nav);
+  const { state, refetch } = useShareTargetVerdict(nav);
 
   function dismiss(): void {
     missDialogStore.dismiss();
@@ -100,6 +100,11 @@ function ShareReceiveMissDialogInner({ nav }: { nav: PendingReceiveNav }) {
             onBrowseFolder={browseFolder}
             onOpenRenamed={openRenamed}
             onEnableAutoSync={dismiss}
+            // A landed Sync now push changes the verdict (the local
+            // delete/rename is now on the branch) — re-probe instead of
+            // dismissing, so the dialog pivots to the honest cell (including
+            // the rename redirect offer).
+            onSyncCompleted={refetch}
           />
         </DialogBody>
       </DialogContent>

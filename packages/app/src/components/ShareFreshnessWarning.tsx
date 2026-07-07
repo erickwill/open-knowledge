@@ -47,9 +47,11 @@ export function shareFreshnessRowVisible(
 /**
  * "Sync now" mirrors the sync badge's own visibility: it is hidden in the
  * states where a manual trigger is meaningless or handled elsewhere (no engine,
- * turned off, needs re-auth, or blocked on a conflict).
+ * turned off, needs re-auth, or blocked on a conflict). Shared with the
+ * share-receive miss surface's changed-locally cell so both Sync-now CTAs
+ * gate on the same engine states.
  */
-function syncNowActionable(status: GitSyncStatus | null): boolean {
+export function syncNowActionable(status: GitSyncStatus | null): boolean {
   if (!status) return false;
   return (
     status.state !== 'dormant' &&

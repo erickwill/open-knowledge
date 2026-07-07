@@ -25,14 +25,17 @@ import {
   MapPin,
   RefreshCw,
 } from 'lucide-react';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   useEnableSyncWithConfirm,
   useSyncEnabledWriter,
 } from '@/hooks/use-enable-sync-with-confirm';
+import { type GitSyncStatus, useGitSyncStatus } from '@/hooks/use-git-sync-status';
 import type { PendingReceiveNav } from '@/lib/share/pending-receive-nav-store';
+import { triggerSync } from '@/lib/trigger-sync';
 import { EnableSyncConfirmDialog } from './EnableSyncConfirmDialog';
+import { syncNowActionable } from './ShareFreshnessWarning';
 
 export type ShareTargetVerdictState =
   | { readonly phase: 'pending' }
@@ -47,10 +50,19 @@ export function parentFolderPath(path: string): string {
 /**
  * Fetch the target-status verdict for a share-receive miss. Fail-open: no
  * bridge / no branch / failed fetch → `unknown`.
+ *
+ * `refetch` re-runs the probe for the SAME target — used after a "Sync now"
+ * push lands, when the just-pushed local delete/rename means the honest
+ * verdict has changed (typically to `deleted` or `renamed`).
  */
-export function useShareTargetVerdict(nav: PendingReceiveNav): ShareTargetVerdictState {
+export function useShareTargetVerdict(nav: PendingReceiveNav): {
+  state: ShareTargetVerdictState;
+  refetch: () => void;
+} {
   const [state, setState] = useState<ShareTargetVerdictState>({ phase: 'pending' });
+  const [epoch, setEpoch] = useState(0);
   const branch = nav.branch;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: epoch is not read in the body — it exists solely to re-run the probe on refetch()
   useEffect(() => {
     const bridge = window.okDesktop ?? null;
     // No desktop bridge (web host) or a branch-less legacy share → skip the
@@ -87,8 +99,14 @@ export function useShareTargetVerdict(nav: PendingReceiveNav): ShareTargetVerdic
     return () => {
       cancelled = true;
     };
-  }, [branch, nav.kind, nav.path]);
-  return state;
+  }, [branch, nav.kind, nav.path, epoch]);
+  return {
+    state,
+    refetch: () => {
+      setState({ phase: 'pending' });
+      setEpoch((e) => e + 1);
+    },
+  };
 }
 
 /**
@@ -123,6 +141,66 @@ function EnableAutoSyncButton({ onEnabled }: { onEnabled?: () => void }) {
 }
 
 /**
+ * "Sync now" recovery action for the `changed-locally` cell when auto-sync is
+ * ALREADY on — the counterpart to `EnableAutoSyncButton` (sync off). Mirrors
+ * the share popover's Sync-now: trigger the engine, hold an in-flight state
+ * until the push lands (a `lastSyncUtc` advance over the CC1-refreshed
+ * status), then hand control back via `onSyncCompleted` so the host re-probes
+ * the verdict — the just-pushed local delete/rename means the honest cell is
+ * now `deleted` or `renamed` (with its redirect offer), not this one.
+ */
+function SyncNowButton({
+  status,
+  onSyncCompleted,
+}: {
+  status: GitSyncStatus;
+  onSyncCompleted?: () => void;
+}) {
+  const [pending, setPending] = useState(false);
+  // The `lastSyncUtc` at click time; a later value means a sync completed
+  // since — the "push landed" signal.
+  const lastSyncAtClick = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!pending) return;
+    if (status.pushError || status.pushErrorCode) {
+      // The manual sync failed — drop the in-flight state so the user can
+      // retry (the sync badge carries the error detail).
+      setPending(false);
+      return;
+    }
+    if ((status.lastSyncUtc ?? null) !== lastSyncAtClick.current) {
+      setPending(false);
+      onSyncCompleted?.();
+    }
+  }, [pending, status, onSyncCompleted]);
+
+  const handleSyncNow = () => {
+    lastSyncAtClick.current = status.lastSyncUtc ?? null;
+    setPending(true);
+    // A trigger that never lands (offline / server down / non-2xx) gets no CC1
+    // status update, so drop out of the in-flight state rather than spin
+    // forever — the user can retry.
+    triggerSync('sync').catch((err) => {
+      console.warn('[receive] miss sync trigger failed', err instanceof Error ? err.message : err);
+      setPending(false);
+    });
+  };
+
+  return pending ? (
+    <Button disabled data-testid="share-receive-miss-sync-now">
+      <RefreshCw className="size-4 animate-spin" aria-hidden="true" />
+      <Trans>Syncing</Trans>
+    </Button>
+  ) : (
+    <Button onClick={handleSyncNow} data-testid="share-receive-miss-sync-now">
+      <RefreshCw className="size-4" aria-hidden="true" />
+      <Trans>Sync now</Trans>
+    </Button>
+  );
+}
+
+/**
  * Inner content for the miss surface — spinner while pending, else the icon +
  * cause-specific message + escape actions. The OUTER container (with its
  * `data-testid` / `data-phase` / `data-verdict`) is owned by each shell so the
@@ -137,6 +215,7 @@ export function ShareReceiveMissContent({
   onBrowseFolder,
   onOpenRenamed,
   onEnableAutoSync,
+  onSyncCompleted,
 }: {
   nav: PendingReceiveNav;
   state: ShareTargetVerdictState;
@@ -144,8 +223,14 @@ export function ShareReceiveMissContent({
   onOpenRenamed: (renamedTo: string) => void;
   /** Called after a successful in-place Enable auto-sync (changed-locally cell) — the shell dismisses or navigates away. */
   onEnableAutoSync?: () => void;
+  /** Called after a "Sync now" push lands (changed-locally cell) — the shell re-probes the verdict, which the push has changed. */
+  onSyncCompleted?: () => void;
 }) {
   const { t } = useLingui();
+  // Sync state feeds only the changed-locally cell (Enable auto-sync vs Sync
+  // now); for every other verdict it is read and unused. Null until the first
+  // status response — neither CTA renders on an unknown sync state.
+  const syncStatus = useGitSyncStatus();
   const branch = nav.branch;
   const targetNoun = nav.kind === 'folder' ? t`folder` : t`document`;
 
@@ -216,23 +301,57 @@ export function ShareReceiveMissContent({
     // The target is still on origin and in the receiver's committed HEAD, but
     // they removed/renamed it in their own working tree without syncing. This is
     // NOT "behind — pull": pulling can't reconcile an uncommitted local change.
+    //
+    // The recovery CTA depends on the sync toggle: OFF gets the guarded Enable
+    // auto-sync flow; ON gets Sync now (pushing the local change, after which
+    // the re-probed verdict lands on the honest deleted/renamed cell). A
+    // degraded engine (denied push, active push error, non-actionable state)
+    // or an unknown sync state gets neither — Browse folder stays.
     icon = <FilePen className="size-9" aria-hidden="true" />;
-    message =
-      branch === null ? (
-        <Trans>
-          This {targetNoun} has been moved, renamed, or deleted in your local copy. Please commit
-          your changes or enable auto-sync.
-        </Trans>
-      ) : (
-        <Trans>
-          This {targetNoun} has been moved, renamed, or deleted in your local copy of branch{' '}
-          <code className="rounded-sm bg-muted px-1 py-0.5 text-foreground/80">{branch}</code>.
-          Please commit your changes or enable auto-sync.
-        </Trans>
-      );
+    const syncOn = syncStatus?.syncEnabled === true;
+    const pushDegraded =
+      syncStatus?.pushPermission?.checkStatus === 'denied' ||
+      Boolean(syncStatus?.pushError || syncStatus?.pushErrorCode);
+    if (syncOn) {
+      message =
+        branch === null ? (
+          <Trans>
+            This {targetNoun} has been moved, renamed, or deleted in your local copy, and that
+            change hasn't synced yet.
+          </Trans>
+        ) : (
+          <Trans>
+            This {targetNoun} has been moved, renamed, or deleted in your local copy of branch{' '}
+            <code className="rounded-sm bg-muted px-1 py-0.5 text-foreground/80">{branch}</code>,
+            and that change hasn't synced yet.
+          </Trans>
+        );
+    } else {
+      message =
+        branch === null ? (
+          <Trans>
+            This {targetNoun} has been moved, renamed, or deleted in your local copy. Please commit
+            your changes or enable auto-sync.
+          </Trans>
+        ) : (
+          <Trans>
+            This {targetNoun} has been moved, renamed, or deleted in your local copy of branch{' '}
+            <code className="rounded-sm bg-muted px-1 py-0.5 text-foreground/80">{branch}</code>.
+            Please commit your changes or enable auto-sync.
+          </Trans>
+        );
+    }
+    let syncAction: ReactNode = null;
+    if (syncStatus?.syncEnabled) {
+      if (syncNowActionable(syncStatus) && !pushDegraded) {
+        syncAction = <SyncNowButton status={syncStatus} onSyncCompleted={onSyncCompleted} />;
+      }
+    } else if (syncStatus !== null) {
+      syncAction = <EnableAutoSyncButton onEnabled={onEnableAutoSync} />;
+    }
     actions = (
       <>
-        <EnableAutoSyncButton onEnabled={onEnableAutoSync} />
+        {syncAction}
         {browseFolderButton}
       </>
     );

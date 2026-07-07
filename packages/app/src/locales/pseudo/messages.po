@@ -6497,6 +6497,7 @@ msgstr ""
 msgid "Sync is off — your edits will not sync to the remote repository."
 msgstr ""
 
+#: src/components/share-receive-miss-content.tsx
 #: src/components/ShareFreshnessWarning.tsx
 #: src/components/SyncStatusBadge.tsx
 msgid "Sync now"
@@ -6548,6 +6549,7 @@ msgstr ""
 msgid "Synced. The link is up to date."
 msgstr ""
 
+#: src/components/share-receive-miss-content.tsx
 #: src/components/ShareFreshnessWarning.tsx
 msgid "Syncing"
 msgstr ""
@@ -6793,7 +6795,15 @@ msgid "There's no project folder for this window, so a terminal can't start here
 msgstr ""
 
 #: src/components/share-receive-miss-content.tsx
+msgid "This {targetNoun} has been moved, renamed, or deleted in your local copy of branch <0>{branch}</0>, and that change hasn't synced yet."
+msgstr ""
+
+#: src/components/share-receive-miss-content.tsx
 msgid "This {targetNoun} has been moved, renamed, or deleted in your local copy of branch <0>{branch}</0>. Please commit your changes or enable auto-sync."
+msgstr ""
+
+#: src/components/share-receive-miss-content.tsx
+msgid "This {targetNoun} has been moved, renamed, or deleted in your local copy, and that change hasn't synced yet."
 msgstr ""
 
 #: src/components/share-receive-miss-content.tsx

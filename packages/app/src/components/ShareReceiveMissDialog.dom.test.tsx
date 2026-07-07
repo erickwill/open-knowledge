@@ -10,6 +10,8 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import type { ShareTargetStatusResponse } from '@inkeep/open-knowledge-core';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { useSyncExternalStore } from 'react';
+import type { GitSyncStatus } from '@/hooks/use-git-sync-status';
 import { missDialogStore } from '@/lib/share/miss-dialog-store';
 import { pendingReceiveNavStore } from '@/lib/share/pending-receive-nav-store';
 
@@ -27,6 +29,50 @@ mock.module('@/lib/config-provider', () => ({
     },
   }),
 }));
+
+// The changed-locally cell picks its CTA off the live sync status (Enable
+// auto-sync when off, Sync now when on). Reactive mock so a test can land a
+// sync (lastSyncUtc advance) and observe the re-probe.
+let syncStatus: GitSyncStatus | null = null;
+const syncStatusListeners = new Set<() => void>();
+function setSyncStatus(next: GitSyncStatus | null): void {
+  syncStatus = next;
+  for (const listener of syncStatusListeners) listener();
+}
+mock.module('@/hooks/use-git-sync-status', () => ({
+  useGitSyncStatus: () =>
+    useSyncExternalStore(
+      (onStoreChange: () => void) => {
+        syncStatusListeners.add(onStoreChange);
+        return () => syncStatusListeners.delete(onStoreChange);
+      },
+      () => syncStatus,
+    ),
+  useGitSyncStatusDetailed: () => ({ status: syncStatus, fetchError: null }),
+}));
+
+let syncTriggers: string[] = [];
+let triggerSyncImpl: () => Promise<void> = () => Promise.resolve();
+mock.module('@/lib/trigger-sync', () => ({
+  triggerSync: (op: string) => {
+    syncTriggers.push(op);
+    return triggerSyncImpl();
+  },
+}));
+
+function makeSyncStatus(partial: Partial<GitSyncStatus>): GitSyncStatus {
+  return {
+    state: 'idle',
+    lastSyncUtc: '2026-07-06T00:00:00Z',
+    lastFetchUtc: null,
+    ahead: 0,
+    behind: 0,
+    conflictCount: 0,
+    hasRemote: true,
+    syncEnabled: true,
+    ...partial,
+  };
+}
 
 const { ShareReceiveMissDialog } = await import('./ShareReceiveMissDialog');
 
@@ -70,6 +116,10 @@ afterEach(() => {
   pendingReceiveNavStore.clear();
   Reflect.deleteProperty(window, 'okDesktop');
   autoSyncWrites = [];
+  syncTriggers = [];
+  triggerSyncImpl = () => Promise.resolve();
+  syncStatus = null;
+  syncStatusListeners.clear();
 });
 
 describe('ShareReceiveMissDialog', () => {
@@ -103,10 +153,13 @@ describe('ShareReceiveMissDialog', () => {
 
   test('changed-locally: Enable auto-sync enables in place and dismisses the dialog', async () => {
     installBridge(stubVerdict({ verdict: 'changed-locally' }));
+    setSyncStatus(makeSyncStatus({ syncEnabled: false, state: 'disabled' }));
     const dialog = await renderArmed();
 
     expect(dialog.getAttribute('data-verdict')).toBe('changed-locally');
     expect(dialog.textContent).toContain('has been moved, renamed, or deleted');
+    // Sync is OFF — the enable CTA renders, never the Sync-now one.
+    expect(screen.queryByTestId('share-receive-miss-sync-now')).toBeNull();
 
     // Open the guarded confirm, then confirm inside it (the confirm dialog is the
     // OTHER role=dialog — the miss dialog carries the testid). Confirming enables
@@ -122,6 +175,98 @@ describe('ShareReceiveMissDialog', () => {
     await waitFor(() => {
       expect(missDialogStore.getSnapshot()).toBeNull();
     });
+  });
+
+  test('changed-locally with auto-sync ON offers Sync now; a landed sync re-probes to the honest verdict', async () => {
+    // First probe says changed-locally; after the push lands the local rename is
+    // on the branch, so the re-probe reports renamed with the redirect target.
+    const verdicts: ShareTargetStatusResponse[] = [
+      { verdict: 'changed-locally' },
+      { verdict: 'renamed', renamedTo: 'knowledge/new-plan.md' },
+    ];
+    let probeCount = 0;
+    installBridge(() => Promise.resolve(verdicts[Math.min(probeCount++, verdicts.length - 1)]));
+    setSyncStatus(makeSyncStatus({ syncEnabled: true, lastSyncUtc: 't0' }));
+    const dialog = await renderArmed();
+
+    expect(dialog.getAttribute('data-verdict')).toBe('changed-locally');
+    expect(dialog.textContent).toContain("hasn't synced yet");
+    // Sync is already ON — offering to enable it would be nonsense.
+    expect(screen.queryByTestId('share-receive-miss-enable-sync')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('share-receive-miss-sync-now'));
+    expect(syncTriggers).toEqual(['sync']);
+    // In-flight until the push lands.
+    expect((screen.getByTestId('share-receive-miss-sync-now') as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+
+    // The push lands (lastSyncUtc advances over the status channel) → the
+    // verdict is re-probed → the dialog pivots to the renamed cell.
+    setSyncStatus(makeSyncStatus({ syncEnabled: true, lastSyncUtc: 't1' }));
+    await waitFor(() => {
+      expect(dialog.getAttribute('data-verdict')).toBe('renamed');
+    });
+    expect(screen.getByTestId('share-receive-miss-open-renamed')).toBeTruthy();
+    expect(probeCount).toBe(2);
+  });
+
+  test('changed-locally with auto-sync ON but a failing push defers to the sync badge (no sync CTA)', async () => {
+    installBridge(stubVerdict({ verdict: 'changed-locally' }));
+    setSyncStatus(makeSyncStatus({ syncEnabled: true, pushError: 'push failed' }));
+    const dialog = await renderArmed();
+
+    expect(dialog.getAttribute('data-verdict')).toBe('changed-locally');
+    expect(screen.queryByTestId('share-receive-miss-sync-now')).toBeNull();
+    expect(screen.queryByTestId('share-receive-miss-enable-sync')).toBeNull();
+    expect(screen.getByTestId('share-receive-miss-browse')).toBeTruthy();
+  });
+
+  test('changed-locally with auto-sync ON but push permission denied defers to the sync badge (no sync CTA)', async () => {
+    installBridge(stubVerdict({ verdict: 'changed-locally' }));
+    setSyncStatus(
+      makeSyncStatus({
+        syncEnabled: true,
+        pushPermission: { checkStatus: 'denied', deniedReason: 'no-collaborator' },
+      }),
+    );
+    const dialog = await renderArmed();
+
+    expect(dialog.getAttribute('data-verdict')).toBe('changed-locally');
+    expect(screen.queryByTestId('share-receive-miss-sync-now')).toBeNull();
+    expect(screen.queryByTestId('share-receive-miss-enable-sync')).toBeNull();
+    expect(screen.getByTestId('share-receive-miss-browse')).toBeTruthy();
+  });
+
+  test('Sync now recovers to an enabled button when the trigger itself fails', async () => {
+    installBridge(stubVerdict({ verdict: 'changed-locally' }));
+    setSyncStatus(makeSyncStatus({ syncEnabled: true }));
+    triggerSyncImpl = () => Promise.reject(new Error('server down'));
+    const dialog = await renderArmed();
+
+    fireEvent.click(screen.getByTestId('share-receive-miss-sync-now'));
+    expect(syncTriggers).toEqual(['sync']);
+
+    // The rejected trigger drops the in-flight state so the user can retry —
+    // no CC1 status update will ever follow a trigger that never landed.
+    await waitFor(() => {
+      expect(
+        (screen.getByTestId('share-receive-miss-sync-now') as HTMLButtonElement).disabled,
+      ).toBe(false);
+    });
+    // No re-probe happened: the verdict is unchanged.
+    expect(dialog.getAttribute('data-verdict')).toBe('changed-locally');
+  });
+
+  test('changed-locally with an unknown sync state renders neither sync CTA', async () => {
+    installBridge(stubVerdict({ verdict: 'changed-locally' }));
+    // syncStatus stays null (no status response yet / unreachable).
+    const dialog = await renderArmed();
+
+    expect(dialog.getAttribute('data-verdict')).toBe('changed-locally');
+    expect(screen.queryByTestId('share-receive-miss-sync-now')).toBeNull();
+    expect(screen.queryByTestId('share-receive-miss-enable-sync')).toBeNull();
+    expect(screen.getByTestId('share-receive-miss-browse')).toBeTruthy();
   });
 
   test('browse folder navigates to the parent folder and dismisses — never to the dead path', async () => {

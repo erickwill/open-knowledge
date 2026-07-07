@@ -1113,6 +1113,11 @@
     "Rq1vFD": ["Tree view options"],
     "RrAIZx": ["What config sharing covers"],
     "Rx5ReQ": ["Rename ", ["keyName"]],
+    "RyIKxy": [
+      "This ",
+      ["targetNoun"],
+      " has been moved, renamed, or deleted in your local copy, and that change hasn't synced yet."
+    ],
     "S33tz3": ["Not connected"],
     "S6l5dv": ["Could not start creating a new item"],
     "S9Vnum": ["Remove ", ["patternText"]],
@@ -1836,6 +1841,13 @@
     "l3s5ri": ["Import"],
     "l46MqT": ["Next tab"],
     "l6OXqI": ["No installed agents found"],
+    "l6kpzR": [
+      "This ",
+      ["targetNoun"],
+      " has been moved, renamed, or deleted in your local copy of branch <0>",
+      ["branch"],
+      "</0>, and that change hasn't synced yet."
+    ],
     "l8G3S9": ["Auto-sync is off — you don't have permission to push to this repo"],
     "lAiyU_": ["Only the current document uses <0>#", ["tag"], "</0>."],
     "lCC_D5": ["Subscribing..."],
