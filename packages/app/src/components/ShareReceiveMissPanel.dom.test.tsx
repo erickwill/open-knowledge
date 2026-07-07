@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import type { ShareTargetStatusResponse } from '@inkeep/open-knowledge-core';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import type { GitSyncStatus } from '@/hooks/use-git-sync-status';
 import { pendingReceiveNavStore } from '@/lib/share/pending-receive-nav-store';
 
 // The changed-locally cell's "Enable auto-sync" CTA enables in place via the
@@ -18,6 +19,28 @@ mock.module('@/lib/config-provider', () => ({
     },
   }),
 }));
+
+// The changed-locally cell picks its CTA off the live sync status: Enable
+// auto-sync when the toggle is off, Sync now when it is already on.
+let syncStatus: GitSyncStatus | null = null;
+mock.module('@/hooks/use-git-sync-status', () => ({
+  useGitSyncStatus: () => syncStatus,
+  useGitSyncStatusDetailed: () => ({ status: syncStatus, fetchError: null }),
+}));
+
+function makeSyncStatus(partial: Partial<GitSyncStatus>): GitSyncStatus {
+  return {
+    state: 'idle',
+    lastSyncUtc: '2026-07-06T00:00:00Z',
+    lastFetchUtc: null,
+    ahead: 0,
+    behind: 0,
+    conflictCount: 0,
+    hasRemote: true,
+    syncEnabled: true,
+    ...partial,
+  };
+}
 
 const { ShareReceiveMissPanel } = await import('./ShareReceiveMissPanel');
 
@@ -60,6 +83,7 @@ afterEach(() => {
   window.location.hash = '';
   pendingReceiveNavStore.clear();
   autoSyncWrites = [];
+  syncStatus = null;
 });
 
 describe('ShareReceiveMissPanel verdict surfaces', () => {
@@ -139,12 +163,14 @@ describe('ShareReceiveMissPanel verdict surfaces', () => {
   // Enable auto-sync recovery CTA (the guarded off → on flow).
   test('changed-locally verdict shows the local-change message and enables auto-sync in place', async () => {
     installBridge(stubVerdict({ verdict: 'changed-locally' }));
+    syncStatus = makeSyncStatus({ syncEnabled: false, state: 'disabled' });
     const panel = await renderResolved();
 
     expect(panel.getAttribute('data-verdict')).toBe('changed-locally');
     expect(panel.textContent).toContain('has been moved, renamed, or deleted');
     expect(panel.textContent).not.toContain('Pull the latest changes');
     expect(screen.getByTestId('share-receive-miss-browse')).toBeTruthy();
+    expect(screen.queryByTestId('share-receive-miss-sync-now')).toBeNull();
 
     // The CTA opens the off → on confirmation gate; nothing is written until the
     // user confirms, and confirming enables auto-sync in place (no navigation).
@@ -156,6 +182,20 @@ describe('ShareReceiveMissPanel verdict surfaces', () => {
     // The in-tab surface has no modal to close, so a successful enable clears it
     // by navigating to the parent folder (DOC_NAV path 'notes/plan' → 'notes').
     expect(window.location.hash).toBe('#/notes/');
+  });
+
+  // With auto-sync already ON, offering to enable it is nonsense — the cell
+  // offers Sync now instead (full trigger/re-probe behavior is covered in the
+  // dialog's dom tests; both shells share the content component).
+  test('changed-locally with auto-sync ON offers Sync now, not Enable auto-sync', async () => {
+    installBridge(stubVerdict({ verdict: 'changed-locally' }));
+    syncStatus = makeSyncStatus({ syncEnabled: true });
+    const panel = await renderResolved();
+
+    expect(panel.getAttribute('data-verdict')).toBe('changed-locally');
+    expect(panel.textContent).toContain("hasn't synced yet");
+    expect(screen.getByTestId('share-receive-miss-sync-now')).toBeTruthy();
+    expect(screen.queryByTestId('share-receive-miss-enable-sync')).toBeNull();
   });
 
   // Fail-open (Pattern B): a transport failure surfaces as `null` from the proxy;

@@ -20,7 +20,7 @@ import {
  * post-nav miss. Both surfaces share the verdict fetch + rendering.
  */
 export function ShareReceiveMissPanel({ nav }: { nav: PendingReceiveNav }) {
-  const state = useShareTargetVerdict(nav);
+  const { state, refetch } = useShareTargetVerdict(nav);
   const containerRef = useRef<HTMLDivElement>(null);
   const branch = nav.branch;
 
@@ -70,6 +70,9 @@ export function ShareReceiveMissPanel({ nav }: { nav: PendingReceiveNav }) {
         // folder so the recovery action clears the surface (same escape as
         // Browse folder).
         onEnableAutoSync={browseFolder}
+        // A landed Sync now push changes the verdict — re-probe so the panel
+        // pivots to the honest cell rather than keeping stale copy.
+        onSyncCompleted={refetch}
       />
     </div>
   );
