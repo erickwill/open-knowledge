@@ -14,6 +14,7 @@
     "validate-link": "bun scripts/validate-link.ts",
     "generate:og-wordmark": "bun scripts/generate-og-wordmark.ts",
     "generate:brand-assets": "bun scripts/generate-brand-assets.ts",
+    "generate:component-docs": "bun scripts/generate-component-docs.ts",
     "postinstall": "fumadocs-mdx"
   },
   "dependencies": {
@@ -27,6 +28,7 @@
     "fumadocs-core": "~16.1.0",
     "fumadocs-mdx": "~14.0.3",
     "fumadocs-ui": "~16.1.0",
+    "katex": "^0.16.22",
     "lucide-react": "^0.503.0",
     "mermaid": "^11.12.3",
     "next": "^16",

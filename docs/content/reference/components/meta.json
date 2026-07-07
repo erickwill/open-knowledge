@@ -1,0 +1,19 @@
+{
+  "title": "Components",
+  "icon": "LuBlocks",
+  "pages": [
+    "index",
+    "callout",
+    "accordion",
+    "tabs",
+    "math",
+    "mermaid-fence",
+    "img",
+    "video",
+    "audio",
+    "pdf",
+    "file",
+    "embed",
+    "mirror"
+  ]
+}
