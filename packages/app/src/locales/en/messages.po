@@ -1710,6 +1710,10 @@ msgstr "Copy path"
 msgid "Copy Path"
 msgstr "Copy Path"
 
+#: src/lib/keyboard-shortcuts.ts
+msgid "Copy selected file or folder"
+msgstr "Copy selected file or folder"
+
 #: src/components/PublishToGitHubDialog.tsx
 msgid "Copy share link"
 msgstr "Copy share link"
@@ -1717,6 +1721,10 @@ msgstr "Copy share link"
 #: src/editor/extensions/JsxComponentView.tsx
 msgid "Copy source"
 msgstr "Copy source"
+
+#: src/lib/keyboard-shortcuts.ts
+msgid "Copy the focused file-tree item so Paste can duplicate it."
+msgstr "Copy the focused file-tree item so Paste can duplicate it."
 
 #: src/components/PublishToGitHubDialog.tsx
 msgid "Copying..."
@@ -2273,6 +2281,10 @@ msgstr "Delete code block"
 msgid "Delete Permanently"
 msgstr "Delete Permanently"
 
+#: src/lib/keyboard-shortcuts.ts
+msgid "Delete selected files or folders"
+msgstr "Delete selected files or folders"
+
 #: src/components/FileTree.tsx
 msgid "Delete selected items"
 msgstr "Delete selected items"
@@ -2532,6 +2544,10 @@ msgstr "Duplicate selected file or folder"
 #: src/components/FileTree.tsx
 msgid "Duplicate succeeded but the sidebar may be out of date — refresh to resync"
 msgstr "Duplicate succeeded but the sidebar may be out of date — refresh to resync"
+
+#: src/lib/keyboard-shortcuts.ts
+msgid "Duplicate the file-tree item copied from the Files sidebar."
+msgstr "Duplicate the file-tree item copied from the Files sidebar."
 
 #: src/lib/keyboard-shortcuts.ts
 msgid "Duplicate the focused file-tree item when focus is in the Files sidebar."
@@ -4800,6 +4816,10 @@ msgstr "Open containing folder, {hint}"
 msgid "Open date picker for {keyName}"
 msgstr "Open date picker for {keyName}"
 
+#: src/lib/keyboard-shortcuts.ts
+msgid "Open delete confirmation for the selected file-tree items."
+msgstr "Open delete confirmation for the selected file-tree items."
+
 #: src/components/PropertyWidgets.tsx
 msgid "Open documents tagged #{chip}"
 msgstr "Open documents tagged #{chip}"
@@ -5122,6 +5142,10 @@ msgstr "Paragraph"
 #: src/editor/extensions/RawMdxFallbackCMView.tsx
 msgid "Parse failed"
 msgstr "Parse failed"
+
+#: src/lib/keyboard-shortcuts.ts
+msgid "Paste duplicate"
+msgstr "Paste duplicate"
 
 #: src/editor/clipboard/source-clipboard.ts
 msgid "Paste failed.{restoreSuffix}"

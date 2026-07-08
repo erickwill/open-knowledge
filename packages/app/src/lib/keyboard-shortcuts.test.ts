@@ -21,6 +21,10 @@ describe('keyboard shortcut registry', () => {
     expect(formatShortcut('new-item', 'windowsLinux')).toBe('Ctrl N');
     expect(formatShortcut('new-folder', 'mac')).toBe('⇧⌘ N');
     expect(formatShortcut('new-folder', 'windowsLinux')).toBe('Ctrl Shift N');
+    expect(formatShortcut('file-tree-copy', 'mac')).toBe('⌘ C');
+    expect(formatShortcut('file-tree-paste', 'windowsLinux')).toBe('Ctrl V');
+    expect(formatShortcut('file-tree-delete', 'mac')).toBe('⌘ Backspace');
+    expect(formatShortcut('file-tree-delete', 'windowsLinux')).toBe('Delete');
     expect(formatShortcut('edit-with-ai', 'mac')).toBe('⇧⌘ I');
     expect(formatShortcut('tab-new', 'mac')).toBe('⌘ T');
     expect(formatShortcut('tab-next', 'mac')).toBe('⌃ Tab');

@@ -1705,12 +1705,20 @@ msgstr ""
 msgid "Copy Path"
 msgstr ""
 
+#: src/lib/keyboard-shortcuts.ts
+msgid "Copy selected file or folder"
+msgstr ""
+
 #: src/components/PublishToGitHubDialog.tsx
 msgid "Copy share link"
 msgstr ""
 
 #: src/editor/extensions/JsxComponentView.tsx
 msgid "Copy source"
+msgstr ""
+
+#: src/lib/keyboard-shortcuts.ts
+msgid "Copy the focused file-tree item so Paste can duplicate it."
 msgstr ""
 
 #: src/components/PublishToGitHubDialog.tsx
@@ -2268,6 +2276,10 @@ msgstr ""
 msgid "Delete Permanently"
 msgstr ""
 
+#: src/lib/keyboard-shortcuts.ts
+msgid "Delete selected files or folders"
+msgstr ""
+
 #: src/components/FileTree.tsx
 msgid "Delete selected items"
 msgstr ""
@@ -2526,6 +2538,10 @@ msgstr ""
 
 #: src/components/FileTree.tsx
 msgid "Duplicate succeeded but the sidebar may be out of date — refresh to resync"
+msgstr ""
+
+#: src/lib/keyboard-shortcuts.ts
+msgid "Duplicate the file-tree item copied from the Files sidebar."
 msgstr ""
 
 #: src/lib/keyboard-shortcuts.ts
@@ -4795,6 +4811,10 @@ msgstr ""
 msgid "Open date picker for {keyName}"
 msgstr ""
 
+#: src/lib/keyboard-shortcuts.ts
+msgid "Open delete confirmation for the selected file-tree items."
+msgstr ""
+
 #: src/components/PropertyWidgets.tsx
 msgid "Open documents tagged #{chip}"
 msgstr ""
@@ -5116,6 +5136,10 @@ msgstr ""
 
 #: src/editor/extensions/RawMdxFallbackCMView.tsx
 msgid "Parse failed"
+msgstr ""
+
+#: src/lib/keyboard-shortcuts.ts
+msgid "Paste duplicate"
 msgstr ""
 
 #: src/editor/clipboard/source-clipboard.ts
