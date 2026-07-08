@@ -19,11 +19,9 @@
  * `receive-store` singleton + `useSyncExternalStore` pattern.
  */
 
-import {
-  normalizeTargetPath,
-  type ResolvedNavigationTarget,
-} from '@/components/navigation-targets';
+import type { ResolvedNavigationTarget } from '@/components/navigation-targets';
 import { docNameFromHash, isContentRootHash } from '@/lib/doc-hash';
+import { normalizeDocNameInput } from '@/lib/doc-paths';
 
 export interface PendingReceiveNav {
   readonly kind: 'doc' | 'folder';
@@ -71,10 +69,7 @@ export function hashSelectsPendingNav(hash: string, armed: PendingReceiveNav): b
   // delivered, the hash as encoded), while the resolver strips it — so normalize
   // both to the same extension-stripped form. Without this the store self-clears
   // on its own arming navigation and the miss guard never fires.
-  return (
-    normalizeTargetPath(docName).normalizedTarget ===
-    normalizeTargetPath(armed.path).normalizedTarget
-  );
+  return normalizeDocNameInput(docName) === normalizeDocNameInput(armed.path);
 }
 
 export function createPendingReceiveNavStore(): PendingReceiveNavStore {
@@ -150,7 +145,6 @@ export function matchesShareReceiveMiss(
   if (activeTarget === null || activeTarget.kind !== 'missing') return null;
   // `armed.path` keeps the share target's extension; `activeTarget.target` is the
   // resolver's stripped form — normalize before comparing.
-  if (armed === null || normalizeTargetPath(armed.path).normalizedTarget !== activeTarget.target)
-    return null;
+  if (armed === null || normalizeDocNameInput(armed.path) !== activeTarget.target) return null;
   return armed;
 }

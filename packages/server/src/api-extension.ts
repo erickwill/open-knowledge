@@ -4424,7 +4424,13 @@ export function createApiExtension(options: ApiExtensionOptions): Extension {
               const shadow = shadowRef.current;
               // Extension-only renames change disk state while preserving the logical docName.
               // The rename log records logical docName moves and rejects self-pairs.
-              const loggableAffectedDocs = affectedDocs.filter(({ from, to }) => from !== to);
+              // Compare on the extension-stripped docName: a same-stem sibling makes
+              // `docNameForFileOperationPath` keep the destination extension-qualified
+              // (`a` -> `a.mdx` when `a.md` exists), so a raw `from !== to` no longer
+              // recognizes the self-pair and would log a phantom rename.
+              const loggableAffectedDocs = affectedDocs.filter(
+                ({ from, to }) => stripDocExtension(from) !== stripDocExtension(to),
+              );
               // Body is fully synchronous (file appends + contributor
               // bookkeeping). withSpanSync avoids inserting a microtask
               // boundary inside the recovery envelope, where pending
