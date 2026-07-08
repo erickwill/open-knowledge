@@ -109,6 +109,7 @@
     "28B21t": ["Agent Skills"],
     "29VNqC": ["Unknown error"],
     "29XZXN": ["Set git identity"],
+    "2B6eYX": ["What this checkbox changes"],
     "2BBAbc": ["List"],
     "2FYpfJ": ["More"],
     "2GT3Hf": ["Global"],
@@ -351,6 +352,7 @@
     "7hctf2": ["Describe the project you want to create"],
     "7jIIFX": ["You're all set up!"],
     "7qRHf0": ["Install for Claude Chat & Cowork"],
+    "7uBlRT": ["Copy the focused file-tree item so Paste can duplicate it."],
     "80c4-P": ["Code copied to clipboard"],
     "81H_23": ["Add properties"],
     "881Uwh": ["Delete selected table"],
@@ -456,6 +458,7 @@
       ". Change it in Settings → Sync."
     ],
     "AcK_r0": ["Claude CLI"],
+    "AczYxH": ["Custom open-knowledge entry — not managed by OpenKnowledge"],
     "AdcGcG": ["Applying your change"],
     "AddR83": ["Could not create project. Try again or pick a different location."],
     "AeHuzT": ["# One pattern per line.\n# Examples:\n#   drafts/\n#   *.draft.md\n#   !keep.md"],
@@ -521,6 +524,9 @@
     "CSL0l1": ["Couldn't clear the key — please try again."],
     "CTJLpz": ["\"", ["trimmed"], "\" already exists here"],
     "CU3AiE": ["Switching branches"],
+    "CWzc2T": [
+      "<0>~/.ok/bin</0> and <1>~/.ok/env.sh</1> stay either way — the app always maintains them."
+    ],
     "CXj9C-": ["New property name"],
     "C_WGy8": [
       "This file is too large to open in the built-in text editor (1 MB limit). Use Open file below to open it in another app."
@@ -736,6 +742,7 @@
     "HIb0vl": ["Network error — please try again"],
     "HM56Bx": ["Creating..."],
     "HPTPGr": ["Create a new spec file for my user story"],
+    "HSh8u_": ["Folders"],
     "HXFyWD": ["Split diff"],
     "HdkSiO": ["New file"],
     "HfI1dR": ["I already have it locally →"],
@@ -870,6 +877,7 @@
     "LXdWeS": ["Medium section heading."],
     "LXfNU-": ["Navigation and suggestions"],
     "LYufDw": ["Failed to enable semantic search — ", ["detail"]],
+    "LbmLyU": ["Can't safely edit this tool's config"],
     "Lcehxn": ["Save resolution"],
     "LdABLa": ["Could not open ", ["target"], ". Try opening it manually."],
     "LdKIHS": ["Draft a spec"],
@@ -986,6 +994,7 @@
     "O0Z2Xr": ["Outgoing"],
     "O2UpM1": ["Browse"],
     "O3oNi5": ["Email"],
+    "O4PnDd": ["AI tool management is only available in the OpenKnowledge desktop app."],
     "O6yEPk": ["Create a new OpenKnowledge project in the folder of your choice."],
     "O7_W_a": ["Open with AI"],
     "OD0FCX": ["Hidden “", ["basename"], "”"],
@@ -1017,6 +1026,7 @@
     "On0aF2": ["Website"],
     "Oo_WWc": ["No pages found"],
     "Oos8fo": ["Copy command"],
+    "OplnBG": ["Managing AI tools is unavailable in this build."],
     "OuY8t9": ["Open in current branch"],
     "OvEjsP": ["Copying..."],
     "OxplNM": ["Updated \"", ["0"], "\": added ", ["1"], ", removed ", ["2"]],
@@ -1234,6 +1244,7 @@
     "VBE2dw": [
       "Build and keep track of the world behind your story. A home for your characters, places, factions, and the lore that ties them together, so details stay consistent as you write."
     ],
+    "VIwCaD": ["Entry"],
     "VM7H66": ["This file is binary and can't be shown as text."],
     "VNgKZz": ["Advanced settings"],
     "VU3Nrn": ["Missing"],
@@ -1251,6 +1262,7 @@
     "VsaI0G": [["folderCount", "plural", { "one": ["folder"], "other": ["folders"] }]],
     "VuxVSP": ["Start source completion"],
     "VvS_k_": ["Config sharing is now local-only."],
+    "VxO6wR": ["Delete selected files or folders"],
     "W-ntoW": ["heading-slug"],
     "W0i24j": ["Object"],
     "W1qRuM": ["This document is already active in the editor. Use Open to collapse the graph."],
@@ -1413,6 +1425,7 @@
     "ZvzbDF": ["Add it directly to this project."],
     "ZxXhLY": ["Hide Files (", ["sidebarShortcut"], ")"],
     "Zz25kq": ["Show Files (", ["sidebarShortcut"], ")"],
+    "_5qBNl": ["AI tools & CLI"],
     "_6FVBz": ["Jump to tab 1-8"],
     "_7UQ7y": ["Whole word"],
     "_8quCH": ["From template"],
@@ -1451,6 +1464,7 @@
     "_qD6mn": ["Pick the folder where you've cloned it."],
     "_rP3HI": [["minutes"], "m ago"],
     "_tekeB": ["updated folder properties"],
+    "_tjopj": ["Paste duplicate"],
     "a-cKXz": ["Select all source"],
     "a3H_MR": ["Open and focus the Ask AI composer for the current editor selection."],
     "a5Gha5": ["Local changes blocked the merge"],
@@ -1488,6 +1502,7 @@
     ],
     "b4itZn": ["Working"],
     "b5aNbi": ["The ", ["targetNoun"], " could not be opened — try navigating to it manually."],
+    "bBE5tC": ["Detected on this machine"],
     "bBcFK_": ["Open emoji picker for ", ["keyName"]],
     "bD8I7O": ["Complete"],
     "bGa3Fk": ["Uploading file"],
@@ -1591,11 +1606,13 @@
     "e1Rn_k": ["Open containing folder"],
     "e1hptq": ["Embed a video with native player controls."],
     "e4GHWP": ["Pull"],
+    "e4PbgC": ["Duplicate the file-tree item copied from the Files sidebar."],
     "e8L17t": ["A non-empty folder already exists at this path. Pick a different folder."],
     "e8zRrb": ["Show Files"],
     "eBIT9h": ["Paste failed.", ["restoreSuffix"]],
     "eFJkVt": ["Clone failed: ", ["cloneError"]],
     "eG8Jsg": ["Toggle source tab focus mode"],
+    "eGUbmF": ["Copy selected file or folder"],
     "eJitUk": ["Upload from computer"],
     "eKThTQ": ["Failed to reorder"],
     "eNQGRb": ["Inline LaTeX math rendered with KaTeX."],
@@ -1619,6 +1636,7 @@
     "f1XQyZ": ["Move block"],
     "f65AOQ": ["Start from"],
     "f8jU-L": [["0"], "/", ["1"], " — ", ["2"]],
+    "f9lQNJ": ["Adds a managed block to"],
     "fBHvBn": ["There's no project folder for this window, so a terminal can't start here."],
     "fBaTkM": ["Toggle the bottom terminal panel."],
     "fG0X0e": ["Install ", ["brand"], " →"],
@@ -1670,6 +1688,7 @@
     ],
     "gYz2ep": ["Expires in ", ["timeLabel"]],
     "gbHcbI": ["Failed to delete property"],
+    "gfdqcY": ["Couldn't apply the change: ", ["0"]],
     "gfohmY": ["Connect tools"],
     "ggm6JX": [
       "This page doesn't exist yet. Open it to create the page in the editor and collapse the graph."
@@ -1901,6 +1920,9 @@
     "mBltnd": ["Path suggestions"],
     "mGaZwZ": ["See the full install guide"],
     "mHVPm5": ["Reconnect required"],
+    "mLAjyL": [
+      "Give the AI tools you use access to read and update your projects. Checking a box sets it up right away; unchecking removes it."
+    ],
     "mNY1G6": ["Undo all edits"],
     "mPneVR": ["Updated \"", ["display"], "\" to ", ["0"], "."],
     "mPy9lS": [
@@ -1966,6 +1988,7 @@
     "nYeBmY": [["hours"], "h ago"],
     "nbfdhU": ["Integrations"],
     "ndeI89": ["Use Cmd/Ctrl+C to copy the link below, or open OK in the desktop app."],
+    "ndwmea": ["unavailable on this platform"],
     "neRy3o": ["Split list item"],
     "nfoduq": ["create worktree"],
     "nft48x": [
@@ -2025,6 +2048,7 @@
     "omXJcU": ["Close others"],
     "optX0N": [["0"], "h ago"],
     "oqB2ez": ["Previous match"],
+    "osRqlv": ["Open delete confirmation for the selected file-tree items."],
     "ot5BRK": ["Duplicate selected file or folder"],
     "otE4aj": ["Show external URL nodes"],
     "ou1hFW": ["Toggle an ordered list."],
@@ -2388,6 +2412,9 @@
       " type: ",
       ["typeLabel"],
       " (inherited from folder properties; not editable here)"
+    ],
+    "yhdqox": [
+      "Installed — ok is available in external terminals. Unchecking removes it; OpenKnowledge's built-in terminal and AI tools keep working."
     ],
     "yitgD9": ["Failed to load skill targets: ", ["0"]],
     "yjExfe": ["Branch <0>", ["shareBranch"], "</0> is checked out in:"],

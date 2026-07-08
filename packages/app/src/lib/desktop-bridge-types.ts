@@ -456,6 +456,55 @@ export interface OkMcpWiringConfirmRequest {
 export type OkMcpWiringResult = { ok: true } | { ok: false; error: string };
 
 /**
+ * Per-editor MCP state for Settings → AI tools. `installed` rows uncheck to
+ * remove; `not-installed` rows check to install; `foreign` is an entry under
+ * OK's server name that isn't recognizably OK's own (uninstall refuses,
+ * install overwrites); `unmanageable` is a config OK can't safely edit.
+ */
+export type OkIntegrationsEditorState = 'installed' | 'not-installed' | 'foreign' | 'unmanageable';
+
+/** Component inventory for Settings → AI tools. `available: false` renders
+ *  the section read-only (install actors gated off for this process). `path.
+ *  installed` reflects the managed rc block actually being on disk. */
+export interface OkIntegrationsStatus {
+  readonly available: boolean;
+  readonly editors: readonly {
+    readonly id: OkMcpWiringEditorId;
+    readonly label: string;
+    readonly detected: boolean;
+    readonly state: OkIntegrationsEditorState;
+    readonly configPath: string | null;
+    readonly entryLocator: string;
+  }[];
+  readonly path: {
+    readonly shellDetected: boolean;
+    readonly rcFilesToTouch: readonly string[];
+    readonly installed: boolean;
+  };
+  readonly skills: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly installed: boolean;
+    readonly paths: readonly string[];
+  }[];
+}
+
+/** One toggle for `integrations.setComponent`. */
+export interface OkIntegrationsSetRequest {
+  readonly component:
+    | { readonly kind: 'editor'; readonly id: OkMcpWiringEditorId }
+    | { readonly kind: 'path' }
+    | { readonly kind: 'skill'; readonly id: string };
+  readonly enabled: boolean;
+}
+
+/** Set-component result — both arms carry a fresh status snapshot so the
+ *  renderer re-renders truthfully after failed/refused toggles too. */
+export type OkIntegrationsSetResult =
+  | { readonly ok: true; readonly status: OkIntegrationsStatus }
+  | { readonly ok: false; readonly error: string; readonly status: OkIntegrationsStatus };
+
+/**
  * Per-project consent dialog — renderer-facing payload + result shapes.
  * Mirrors `bridge-contract.ts` and `core/src/desktop-bridge.ts`. Drift
  * across the three copies is caught by the bridge-contract drift test.
@@ -1072,6 +1121,15 @@ export interface OkDesktopBridge {
     signalReady(): void;
     confirm(request: OkMcpWiringConfirmRequest): Promise<OkMcpWiringResult>;
     skip(): Promise<OkMcpWiringResult>;
+  };
+  /**
+   * Settings → AI tools: live per-component install state + one-component
+   * install/uninstall for OK's global footprint (per-editor MCP entries,
+   * shell-PATH shim, user-global skill bundles). Mutations serialize in main.
+   */
+  integrations: {
+    status(): Promise<OkIntegrationsStatus>;
+    setComponent(request: OkIntegrationsSetRequest): Promise<OkIntegrationsSetResult>;
   };
   /**
    * Per-project consent dialog surface. Navigator-only. Renderer mounts a

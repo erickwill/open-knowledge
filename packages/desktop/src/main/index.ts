@@ -48,11 +48,14 @@ import {
   detectInstalledEditors,
   EDITOR_TARGETS,
   getOkArtifactPaths,
+  HOSTS_WITH_USER_SKILL_DIR,
+  isEntryUpToDate,
   isOwnManagedEntry,
   type McpInstallOptions,
   type ProjectAiIntegrationsResult,
   previewContent,
   readExistingMcpEntry,
+  removeOwnMcpEntry,
   removeUserGlobalSkillBundle,
   runStop,
   type TrackedRefusal,
@@ -180,6 +183,7 @@ import { ensureGitAvailable } from './git-preflight-handler.ts';
 import { readCanonicalGitHubRemoteUrl } from './git-remote.ts';
 import { formatInstanceAppName, resolveInstanceLabel } from './instance-identity.ts';
 import { deriveInstanceUserDataDir } from './instance-isolation.ts';
+import { registerIntegrationsSettings } from './integrations-settings.ts';
 import { handleBuildAndOpen, handleDetectClaudeDesktop } from './ipc/install-skill.ts';
 import {
   createLocalOpState,
@@ -225,6 +229,8 @@ import {
   computePathLeg,
   type EnsureCliOnPathResult,
   ensureCliOnPath,
+  isPathShimInstalled,
+  removePathShimFromRcFiles,
 } from './path-install.ts';
 import { installStdioBrokenPipeGuard } from './process-safety-net.ts';
 import {
@@ -3873,6 +3879,173 @@ function registerIpcHandlers() {
   });
   handle('ok:local-op:auth:repos', async (_event, request) => {
     return handleAuthRepos(localOpDeps, request);
+  });
+
+  registerIntegrationsSettingsIpc();
+}
+
+/**
+ * Settings → AI tools: persistent status/toggle IPC over the same install
+ * actors as the first-launch consent dialog (`createMcpWiringOpts`) and the
+ * startup reclaim — `writeUserMcpConfigs` + surgical removal for editors,
+ * `ensureCliOnPath` / rc-block strip for the PATH shim, decision-gated
+ * reclaim + teardown for the user-global skill bundles. `available` mirrors
+ * the wiring gate set so the section renders read-only exactly where the
+ * consent dialog would refuse to arm.
+ */
+function registerIntegrationsSettingsIpc(): void {
+  const integrationsLogger = getLogger('integrations-settings');
+  const available =
+    process.env.OK_RECLAIM_DISABLE !== '1' &&
+    process.platform === 'darwin' &&
+    (app.isPackaged || process.env.OK_M6B_FORCE === '1') &&
+    /\.app\/Contents\/MacOS\/[^/]+$/.test(app.getPath('exe'));
+  const tildifyHomePath = (path: string): string => {
+    const home = osHomedir();
+    return path.startsWith(`${home}/`) ? `~${path.slice(home.length)}` : path;
+  };
+  registerIntegrationsSettings({
+    home: osHomedir(),
+    available,
+    ipcMain,
+    cli: {
+      allEditorIds: ALL_EDITOR_IDS,
+      editorLabel: (editorId) => EDITOR_TARGETS[editorId].label,
+      detectInstalledEditors: (cwd, home) => detectInstalledEditors(cwd, home),
+      classifyExistingMcpEntry: (editorId, home) =>
+        classifyExistingMcpEntry(EDITOR_TARGETS[editorId], '', home),
+      // The removal gate: `isEntryUpToDate` recognizes both the resolver-chain
+      // and OpenCode shapes via the version sentinel; `isOwnManagedEntry` is
+      // the exact canonical match. Same predicate `removeOwnMcpEntry` applies
+      // internally, so a row shown as 'installed' is always removable.
+      isOwnEntry: (entry) => isEntryUpToDate(entry) || isOwnManagedEntry(entry),
+      editorConfigPath: (editorId) => {
+        try {
+          return tildifyHomePath(EDITOR_TARGETS[editorId].configPath('', osHomedir()));
+        } catch {
+          // Platform-mismatched resolver (e.g. Claude Desktop off-macOS).
+          return null;
+        }
+      },
+      editorEntryLocator: (editorId) => {
+        const target = EDITOR_TARGETS[editorId];
+        const server = target.serverName('');
+        return target.format === 'toml'
+          ? `[${target.topLevelKey}.${server}]`
+          : [target.topLevelKey, target.serverMapSubKey, server].filter(Boolean).join('.');
+      },
+      writeUserMcpConfigs: (writeOpts) => writeUserMcpConfigs(writeOpts),
+      removeUserMcpEntry: (editorId) =>
+        removeOwnMcpEntry(EDITOR_TARGETS[editorId], '', osHomedir()),
+    },
+    path: {
+      computeStatus: () => {
+        const descriptor = computePathInstallDescriptor({
+          home: osHomedir(),
+          env: process.env,
+          logger: pathInstallLogger,
+        });
+        return {
+          shellDetected: descriptor.shellDetected,
+          rcFilesToTouch: descriptor.rcFilesToTouch,
+          installed: isPathShimInstalled({
+            home: osHomedir(),
+            env: process.env,
+            logger: pathInstallLogger,
+          }),
+        };
+      },
+      install: async () => {
+        const result = await ensureCliOnPath({
+          ...buildEnsureCliOnPathOpts(),
+          consentDecision: { status: 'granted', at: new Date().toISOString() },
+        });
+        if (result.status === 'failed-all') return { ok: false as const, error: result.error };
+        if (result.status === 'skipped') {
+          return {
+            ok: false as const,
+            error: `PATH setup is unavailable in this build (${result.reason}).`,
+          };
+        }
+        return { ok: true as const };
+      },
+      uninstall: async () => {
+        const result = removePathShimFromRcFiles({
+          home: osHomedir(),
+          env: process.env,
+          logger: pathInstallLogger,
+        });
+        if (result.status === 'failed') return { ok: false as const, error: result.error };
+        return { ok: true as const };
+      },
+    },
+    skills: {
+      computeStatuses: () =>
+        USER_GLOBAL_BUNDLE_IDS.map((id) => {
+          const home = osHomedir();
+          const name = BUNDLE_SKILL_NAME[id];
+          return {
+            id,
+            name,
+            installed: existsSync(join(home, '.agents', 'skills', name)),
+            // Central copy always; per-host copies only where the host root
+            // exists (mirrors installUserBundleToHostDirs' skipped-host-absent).
+            paths: [
+              `~/.agents/skills/${name}`,
+              ...HOSTS_WITH_USER_SKILL_DIR.filter((h) => existsSync(join(home, h.hostDir))).map(
+                (h) => `~/${h.hostDir}/skills/${name}`,
+              ),
+            ],
+          };
+        }),
+      setEnabled: async (bundleId, enabled) => {
+        const home = osHomedir();
+        const id = USER_GLOBAL_BUNDLE_IDS.find((b) => b === bundleId);
+        if (!id) return { ok: false as const, error: 'Unknown skill.' };
+        const name = BUNDLE_SKILL_NAME[id];
+        // Decision first (the durable record every install actor gates on),
+        // then the disk effect — same order as the consent-dialog leg.
+        try {
+          await writeBundleDecision(home, name, enabled);
+        } catch (err) {
+          return {
+            ok: false as const,
+            error: `Couldn't save your preference for ${name}: ${formatUnknownError(err)}`,
+          };
+        }
+        if (!enabled) {
+          try {
+            removeUserGlobalSkillBundle(home, id);
+          } catch (err) {
+            return { ok: false as const, error: formatUnknownError(err) };
+          }
+          return { ok: true as const };
+        }
+        try {
+          const result = await reclaimUserSkillsOnLaunch(buildReclaimUserSkillsOpts());
+          if (result.status === 'skipped') {
+            return {
+              ok: false as const,
+              error: `Couldn't install ${name} (${result.reason}).`,
+            };
+          }
+        } catch (err) {
+          return { ok: false as const, error: formatUnknownError(err) };
+        }
+        // Verify by effect — the reclaim reports per-target entries, but the
+        // central-store dir is the definitive "installed" signal every other
+        // surface reads.
+        if (!existsSync(join(home, '.agents', 'skills', name))) {
+          return { ok: false as const, error: `Couldn't install ${name}.` };
+        }
+        return { ok: true as const };
+      },
+    },
+    logger: {
+      warn: (msg, ctx) => integrationsLogger.warn((ctx ?? {}) as Record<string, unknown>, msg),
+      error: (msg, ctx) => integrationsLogger.error((ctx ?? {}) as Record<string, unknown>, msg),
+      event: (payload) => integrationsLogger.info(payload, payload.event),
+    },
   });
 }
 

@@ -476,6 +476,24 @@ export async function installHandoffMocks(page: Page, cfg: HandoffMockConfig): P
           confirm: async () => ({ ok: true }),
           skip: async () => ({ ok: true }),
         },
+        integrations: {
+          status: async () => ({
+            available: false,
+            editors: [],
+            path: { shellDetected: false, rcFilesToTouch: [], installed: false },
+            skills: [],
+          }),
+          setComponent: async () => ({
+            ok: false as const,
+            error: 'unavailable in tests',
+            status: {
+              available: false,
+              editors: [],
+              path: { shellDetected: false, rcFilesToTouch: [], installed: false },
+              skills: [],
+            },
+          }),
+        },
         // installConsentListener + installOnboardingToastListener are
         // wired unconditionally by main.tsx (both guarded internally by
         // `if (!b.onboarding) return`), so these stubs run at the

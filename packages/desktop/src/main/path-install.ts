@@ -467,13 +467,17 @@ export async function ensureCliOnPath(opts: EnsureCliOnPathOpts): Promise<Ensure
 
   const wrapper = wrapperPathInBundle(executablePath);
   const prior = readMarker(home, fs, logger);
-  // A caller-supplied decision that CHANGES the recorded consent must reach
-  // the full install path — the fast-path below would otherwise swallow a
-  // dialog grant on a marker that is healthy-but-blockless (fresh boot wrote
-  // symlinks + shim, rcFiles empty, consent undecided).
-  const consentUnchanged =
-    opts.consentDecision === undefined || prior?.consent?.status === opts.consentDecision.status;
-  if (prior && consentUnchanged && markerHealthy(prior, home, wrapper, fs, logger)) {
+  // ANY caller-supplied decision must reach the full install path. The
+  // fast-path below would otherwise swallow a grant on a marker that is
+  // healthy-but-blockless: `markerHealthy` is vacuously true when `rcFiles`
+  // is empty (fresh boot wrote only symlinks + shim; or a Settings uninstall
+  // stripped the blocks and recorded declined), so a same-status re-grant
+  // (granted → granted after a partial write) or a declined → granted flip
+  // from the Settings checkbox would return healthy-current without ever
+  // appending a block. The full path is idempotent, so an explicit decision
+  // re-running it is safe.
+  const explicitDecision = opts.consentDecision !== undefined;
+  if (prior && !explicitDecision && markerHealthy(prior, home, wrapper, fs, logger)) {
     // Grandfather stamp: a pre-consent marker whose recorded rc files
     // all still carry the managed block — markerHealthy just verified them —
     // is a working silent-era install. Record it as granted so the decision
@@ -549,7 +553,15 @@ export async function ensureCliOnPath(opts: EnsureCliOnPathOpts): Promise<Ensure
       (target) => !rcOptOuts.includes(target.path),
     );
     const activePriorRcFiles = (prior?.rcFiles ?? []).filter((file) => !rcOptOuts.includes(file));
+    // An explicit grant must never take this shortcut: after a Settings
+    // uninstall `rcFiles` is empty (vacuously "all healthy") and
+    // `okBinAlreadyOnPath` is often stale-true — the probe shell INHERITS the
+    // app's PATH, which still carries `~/.ok/bin` when the app was launched
+    // from a terminal whose session predates the uninstall. Skipping here
+    // would record the grant while writing no block, wedging the checkbox.
+    const explicitGrant = opts.consentDecision?.status === 'granted';
     const canSkipRc =
+      !explicitGrant &&
       prior != null &&
       discovery?.okBinAlreadyOnPath === true &&
       activePriorRcFiles.every((file) => rcBlockHealthy(file, fs));
@@ -675,4 +687,109 @@ export function computePathInstallDescriptor(opts: {
     rcFilesToTouch: targets.map((target) => tildify(target.path, home)),
     alreadyInstalled: blockPresent || marker?.consent?.status === 'granted',
   };
+}
+
+/**
+ * Settings-surface probe: is the managed rc block actually on disk? Distinct
+ * from `computePathInstallDescriptor().alreadyInstalled`, which also reads
+ * true on a recorded grant with no block — the Settings checkbox reflects the
+ * real effect (block present ⇒ `ok` resolves in external terminals), so a
+ * failed or reverted grant renders unchecked and stays re-installable.
+ */
+export function isPathShimInstalled(opts: {
+  home: string;
+  env?: Record<string, string | undefined>;
+  fs?: PathInstallFsOps;
+  logger?: PathInstallLogger;
+}): boolean {
+  const { home, fs = defaultFsOps, logger = DEFAULT_LOGGER } = opts;
+  const marker = readMarker(home, fs, logger);
+  const candidates = new Set<string>([
+    ...rcTargets(home, (opts.env ?? process.env).SHELL, fs).map((target) => target.path),
+    ...(marker?.rcFiles ?? []),
+  ]);
+  return [...candidates].some((path) => rcBlockHealthy(path, fs));
+}
+
+export type RemovePathShimResult =
+  | { status: 'removed'; strippedFiles: string[] }
+  | { status: 'not-installed' }
+  | { status: 'failed'; error: string };
+
+/**
+ * Settings-surface uninstall — the inverse of the consent-granted rc append.
+ * Strips the managed block from every candidate rc file (recorded
+ * `marker.rcFiles` plus the current shell targets), deletes the OK-owned fish
+ * conf file outright when nothing but the block was in it, and records
+ * `consent: declined` with `rcFiles: []` so the startup self-heal never
+ * re-appends.
+ *
+ * Deliberately narrower than `ok uninstall`: `~/.ok/bin` and `~/.ok/env.sh`
+ * stay — the built-in terminal injects `~/.ok/bin` itself and MCP wiring runs
+ * over npx, so only the EXTERNAL-terminal footprint (the rc blocks) is
+ * removed. Stripped files are NOT added to `rcOptOuts` — that list means "the
+ * USER removed the block, never write there again", and recording an
+ * OK-initiated removal there would break a later re-install from the same
+ * Settings checkbox.
+ */
+export function removePathShimFromRcFiles(opts: {
+  home: string;
+  env?: Record<string, string | undefined>;
+  fs?: PathInstallFsOps;
+  logger?: PathInstallLogger;
+  now?: () => Date;
+}): RemovePathShimResult {
+  const { home, fs = defaultFsOps, logger = DEFAULT_LOGGER } = opts;
+  const marker = readMarker(home, fs, logger);
+  const candidates = new Set<string>([
+    ...rcTargets(home, (opts.env ?? process.env).SHELL, fs).map((target) => target.path),
+    ...(marker?.rcFiles ?? []),
+  ]);
+  const okOwnedFishConf = join(home, '.config', 'fish', 'conf.d', 'open-knowledge.fish');
+  const strippedFiles: string[] = [];
+  try {
+    for (const path of candidates) {
+      if (!fs.existsSync(path)) continue;
+      const prior = fs.readFileSync(path, 'utf8');
+      // Loop: a file that somehow accumulated multiple managed blocks (rc
+      // concatenation, dotfile sync merge) must come out fully clean.
+      let next = prior;
+      while (BLOCK_RE.test(next)) next = next.replace(BLOCK_RE, '');
+      if (next === prior) continue;
+      if (next.trim() === '' && path === okOwnedFishConf) {
+        // The whole file was the managed block (OK created it) — remove the
+        // file rather than leave an empty husk behind.
+        fs.unlinkSync(path);
+      } else {
+        fs.writeFileSync(path, next);
+      }
+      strippedFiles.push(path);
+      logger.event({ event: 'path-install-rc-block-removed', path: tildify(path, home) });
+    }
+    const consentAlreadyDeclined = marker?.consent?.status === 'declined';
+    if (marker && (strippedFiles.length > 0 || !consentAlreadyDeclined)) {
+      writeMarker(
+        home,
+        {
+          ...marker,
+          rcFiles: [],
+          consent: { status: 'declined', at: (opts.now?.() ?? new Date()).toISOString() },
+        },
+        fs,
+      );
+      logger.event({
+        event: 'path-install-consent-declined',
+        source: 'settings',
+        rcTargetCount: strippedFiles.length,
+      });
+    }
+    if (strippedFiles.length === 0 && (marker === null || consentAlreadyDeclined)) {
+      return { status: 'not-installed' };
+    }
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    logger.event({ event: 'path-install-remove-failed', error });
+    return { status: 'failed', error };
+  }
+  return { status: 'removed', strippedFiles };
 }

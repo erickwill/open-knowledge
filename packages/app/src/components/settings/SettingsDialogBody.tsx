@@ -106,6 +106,7 @@ import {
 } from '@/lib/keyboard-shortcuts';
 import { cn } from '@/lib/utils';
 import { AccountSection } from './AccountSection';
+import { AiToolsSection } from './AiToolsSection';
 import { EmbeddingsKeySection } from './EmbeddingsKeySection';
 import { OkignoreSection } from './OkignoreSection';
 import { ProjectTemplatesSection } from './ProjectTemplatesSection';
@@ -242,6 +243,11 @@ export function SettingsDialogBody({
     // FileTree right-click "Hide this file/folder" affordance via
     // `<ConfigProvider>` — both write to the same Y.Text body.
     return <OkignoreSection binding={okignoreBinding} synced={okignoreSynced} />;
+  }
+  if (activeId === 'ai-tools') {
+    // Global AI-tool management — desktop-only (nav item gated to the
+    // Electron host). Talks to main over the integrations bridge.
+    return <AiToolsSection />;
   }
   if (activeId === 'claude-desktop') {
     return <IntegrationsSection />;

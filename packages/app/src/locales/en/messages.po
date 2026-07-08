@@ -476,6 +476,10 @@ msgstr "<{componentName}> isn't a known component. Copy the source to use it els
 msgid "<{descriptorLabel}> failed to render (likely a bad prop). Copy the source to see what went wrong, or delete the block."
 msgstr "<{descriptorLabel}> failed to render (likely a bad prop). Copy the source to see what went wrong, or delete the block."
 
+#: src/components/settings/AiToolsSection.tsx
+msgid "<0>~/.ok/bin</0> and <1>~/.ok/env.sh</1> stay either way — the app always maintains them."
+msgstr "<0>~/.ok/bin</0> and <1>~/.ok/env.sh</1> stay either way — the app always maintains them."
+
 #: src/editor/components/Mirror.tsx
 msgid "<0>Mirror — pick a source.</0> Set <1>src</1> + <2>anchor</2> via the property panel to point at a <3><MirrorSource></3> elsewhere."
 msgstr "<0>Mirror — pick a source.</0> Set <1>src</1> + <2>anchor</2> via the property panel to point at a <3><MirrorSource></3> elsewhere."
@@ -708,8 +712,10 @@ msgstr "Add tab"
 msgid "Add tag"
 msgstr "Add tag"
 
+#. Checkbox in Settings → AI tools & CLI that adds the ok CLI to the user's shell PATH
 #. Toggle in the first-launch dialog that adds the ok CLI to the user's shell PATH
 #: src/components/McpConsentDialogBody.tsx
+#: src/components/settings/AiToolsSection.tsx
 msgid "Add the <0>ok</0> command to your terminal"
 msgstr "Add the <0>ok</0> command to your terminal"
 
@@ -718,12 +724,20 @@ msgid "Add the next matching source selection."
 msgstr "Add the next matching source selection."
 
 #. Subtext for the open-knowledge-write-skill skill row
+#. Subtext for the open-knowledge-write-skill skill row
 #: src/components/McpConsentDialogBody.tsx
+#: src/components/settings/AiToolsSection.tsx
 msgid "Adds a guided workflow for authoring new Agent Skills."
 msgstr "Adds a guided workflow for authoring new Agent Skills."
 
+#: src/components/settings/AiToolsSection.tsx
+msgid "Adds a managed block to"
+msgstr "Adds a managed block to"
+
 #. placeholder {0}: pathInstall.rcFilesToTouch.join(', ')
+#. placeholder {0}: status.path.rcFilesToTouch.join(', ')
 #: src/components/McpConsentDialogBody.tsx
+#: src/components/settings/AiToolsSection.tsx
 msgid "Adds a managed block to {0}"
 msgstr "Adds a managed block to {0}"
 
@@ -752,10 +766,21 @@ msgstr "Agent activity"
 msgid "Agent configuration file"
 msgstr "Agent configuration file"
 
+#. Group label above the skill rows in Settings → AI tools & CLI
 #. Section label above the skill checkboxes in the first-launch dialog
 #: src/components/McpConsentDialogBody.tsx
+#: src/components/settings/AiToolsSection.tsx
 msgid "Agent Skills"
 msgstr "Agent Skills"
+
+#: src/components/settings/AiToolsSection.tsx
+msgid "AI tool management is only available in the OpenKnowledge desktop app."
+msgstr "AI tool management is only available in the OpenKnowledge desktop app."
+
+#: src/components/settings/AiToolsSection.tsx
+#: src/components/settings/SettingsDialogShell.tsx
+msgid "AI tools & CLI"
+msgstr "AI tools & CLI"
 
 #: src/components/FolderOverview.tsx
 msgid "All files"
@@ -1107,6 +1132,10 @@ msgstr "By tag"
 #: src/components/CreateProjectDialog.tsx
 msgid "Can't nest projects. An OpenKnowledge project already exists at <0>{rootPath}</0>. Choose a location outside it, or open that project instead."
 msgstr "Can't nest projects. An OpenKnowledge project already exists at <0>{rootPath}</0>. Choose a location outside it, or open that project instead."
+
+#: src/components/settings/AiToolsSection.tsx
+msgid "Can't safely edit this tool's config"
+msgstr "Can't safely edit this tool's config"
 
 #: src/components/ActivityPanelFileRow.tsx
 #: src/components/AuthModal.tsx
@@ -1681,6 +1710,10 @@ msgstr "Copy path"
 msgid "Copy Path"
 msgstr "Copy Path"
 
+#: src/lib/keyboard-shortcuts.ts
+msgid "Copy selected file or folder"
+msgstr "Copy selected file or folder"
+
 #: src/components/PublishToGitHubDialog.tsx
 msgid "Copy share link"
 msgstr "Copy share link"
@@ -1688,6 +1721,10 @@ msgstr "Copy share link"
 #: src/editor/extensions/JsxComponentView.tsx
 msgid "Copy source"
 msgstr "Copy source"
+
+#: src/lib/keyboard-shortcuts.ts
+msgid "Copy the focused file-tree item so Paste can duplicate it."
+msgstr "Copy the focused file-tree item so Paste can duplicate it."
 
 #: src/components/PublishToGitHubDialog.tsx
 msgid "Copying..."
@@ -1807,6 +1844,11 @@ msgstr "Could not validate folder. Please try again."
 #: src/components/CreateProjectDialog.tsx
 msgid "Could not write project files. Try a different location."
 msgstr "Could not write project files. Try a different location."
+
+#. placeholder {0}: err instanceof Error ? err.message : String(err)
+#: src/components/settings/AiToolsSection.tsx
+msgid "Couldn't apply the change: {0}"
+msgstr "Couldn't apply the change: {0}"
 
 #: src/components/settings/EmbeddingsKeySection.tsx
 msgid "Couldn't clear the key — please try again."
@@ -2172,6 +2214,10 @@ msgstr "Custom display text"
 msgid "Custom HTML with a live preview pane (sandboxed iframe)."
 msgstr "Custom HTML with a live preview pane (sandboxed iframe)."
 
+#: src/components/settings/AiToolsSection.tsx
+msgid "Custom open-knowledge entry — not managed by OpenKnowledge"
+msgstr "Custom open-knowledge entry — not managed by OpenKnowledge"
+
 #: src/components/settings/SettingsDialogBody.tsx
 msgid "Customize how the editor looks and behaves."
 msgstr "Customize how the editor looks and behaves."
@@ -2234,6 +2280,10 @@ msgstr "Delete code block"
 #: src/components/TrashFailureModal.tsx
 msgid "Delete Permanently"
 msgstr "Delete Permanently"
+
+#: src/lib/keyboard-shortcuts.ts
+msgid "Delete selected files or folders"
+msgstr "Delete selected files or folders"
 
 #: src/components/FileTree.tsx
 msgid "Delete selected items"
@@ -2300,6 +2350,10 @@ msgstr "Details"
 #: src/components/settings/SkillTargetsPicker.tsx
 msgid "Detected from the editors this project is set up for. Adjust to control where every skill installs."
 msgstr "Detected from the editors this project is set up for. Adjust to control where every skill installs."
+
+#: src/components/settings/AiToolsSection.tsx
+msgid "Detected on this machine"
+msgstr "Detected on this machine"
 
 #: src/components/CommandPalette.tsx
 #: src/components/handoff/OpenInAgentMenuItem.tsx
@@ -2490,6 +2544,10 @@ msgstr "Duplicate selected file or folder"
 #: src/components/FileTree.tsx
 msgid "Duplicate succeeded but the sidebar may be out of date — refresh to resync"
 msgstr "Duplicate succeeded but the sidebar may be out of date — refresh to resync"
+
+#: src/lib/keyboard-shortcuts.ts
+msgid "Duplicate the file-tree item copied from the Files sidebar."
+msgstr "Duplicate the file-tree item copied from the Files sidebar."
 
 #: src/lib/keyboard-shortcuts.ts
 msgid "Duplicate the focused file-tree item when focus is in the Files sidebar."
@@ -2688,6 +2746,10 @@ msgstr "Enter a title for this template."
 #: src/components/NewWorktreeDialog.tsx
 msgid "Enter a valid branch name (no spaces, no leading dot, no \"..\")."
 msgstr "Enter a valid branch name (no spaces, no leading dot, no \"..\")."
+
+#: src/components/settings/AiToolsSection.tsx
+msgid "Entry"
+msgstr "Entry"
 
 #: src/components/ShareReceiveDialog.tsx
 msgid "Error:"
@@ -2991,6 +3053,7 @@ msgstr "Fetch failed — check the server logs for details."
 msgid "Fetching"
 msgstr "Fetching"
 
+#: src/components/settings/AiToolsSection.tsx
 #: src/components/share-metadata-rows.tsx
 #: src/editor/slash-command/component-items.tsx
 msgid "File"
@@ -3141,6 +3204,10 @@ msgstr "Folder properties"
 msgid "Folder target: {linkTitle}. Click to open the overview."
 msgstr "Folder target: {linkTitle}. Click to open the overview."
 
+#: src/components/settings/AiToolsSection.tsx
+msgid "Folders"
+msgstr "Folders"
+
 #: src/components/SubscribeCard.tsx
 msgid "Follow us on"
 msgstr "Follow us on"
@@ -3224,6 +3291,10 @@ msgstr "GitHub authentication failed. Try signing in again."
 #: src/components/SyncStatusBadge.tsx
 msgid "GitHub sign-in is missing or expired. Reconnect to resume syncing."
 msgstr "GitHub sign-in is missing or expired. Reconnect to resume syncing."
+
+#: src/components/settings/AiToolsSection.tsx
+msgid "Give the AI tools you use access to read and update your projects. Checking a box sets it up right away; unchecking removes it."
+msgstr "Give the AI tools you use access to read and update your projects. Checking a box sets it up right away; unchecking removes it."
 
 #: src/components/McpConsentDialogBody.tsx
 msgid "Give the AI tools you use access to read and update your projects. Pick what to set up below, and change it anytime."
@@ -3318,7 +3389,9 @@ msgid "Hello, world!"
 msgstr "Hello, world!"
 
 #. Subtext for the open-knowledge-discovery skill row
+#. Subtext for the open-knowledge-discovery skill row
 #: src/components/McpConsentDialogBody.tsx
+#: src/components/settings/AiToolsSection.tsx
 msgid "Helps your coding agent recognize OpenKnowledge projects and route reads and writes through it."
 msgstr "Helps your coding agent recognize OpenKnowledge projects and route reads and writes through it."
 
@@ -3436,12 +3509,15 @@ msgid "How to push manually"
 msgstr "How to push manually"
 
 #. Link on an undetected tool row to its OpenKnowledge setup guide
+#. Link on an undetected tool row to its OpenKnowledge setup guide
 #: src/components/McpConsentDialogBody.tsx
+#: src/components/settings/AiToolsSection.tsx
 msgid "How to set up"
 msgstr "How to set up"
 
 #. placeholder {0}: editor.label
 #: src/components/McpConsentDialogBody.tsx
+#: src/components/settings/AiToolsSection.tsx
 msgid "How to set up {0} (opens in browser)"
 msgstr "How to set up {0} (opens in browser)"
 
@@ -3648,11 +3724,16 @@ msgstr "Install on all"
 msgid "Install skills into"
 msgstr "Install skills into"
 
+#: src/components/settings/AiToolsSection.tsx
 #: src/components/SkillEditorActions.tsx
 #: src/components/SkillRow.tsx
 #: src/components/SkillStateBadge.tsx
 msgid "Installed"
 msgstr "Installed"
+
+#: src/components/settings/AiToolsSection.tsx
+msgid "Installed — ok is available in external terminals. Unchecking removes it; OpenKnowledge's built-in terminal and AI tools keep working."
+msgstr "Installed — ok is available in external terminals. Unchecking removes it; OpenKnowledge's built-in terminal and AI tools keep working."
 
 #. placeholder {0}: skill.name
 #. placeholder {1}: label(added)
@@ -3970,6 +4051,10 @@ msgstr "Manage hidden files in Settings → Ignore patterns."
 msgid "Manage the GitHub account OpenKnowledge uses to browse and sync your repositories."
 msgstr "Manage the GitHub account OpenKnowledge uses to browse and sync your repositories."
 
+#: src/components/settings/AiToolsSection.tsx
+msgid "Managing AI tools is unavailable in this build."
+msgstr "Managing AI tools is unavailable in this build."
+
 #: src/components/empty-state/use-create-suggestions.ts
 msgid "Map the architecture"
 msgstr "Map the architecture"
@@ -3990,8 +4075,10 @@ msgstr "Markdown source"
 msgid "Match case"
 msgstr "Match case"
 
+#. Group label above the per-editor MCP list in Settings → AI tools & CLI — each row wires OpenKnowledge's MCP server into that tool
 #. Section label above the editor checkbox list in the first-launch dialog — each row wires OpenKnowledge's MCP server into that tool
 #: src/components/McpConsentDialogBody.tsx
+#: src/components/settings/AiToolsSection.tsx
 msgid "MCP connections"
 msgstr "MCP connections"
 
@@ -4729,6 +4816,10 @@ msgstr "Open containing folder, {hint}"
 msgid "Open date picker for {keyName}"
 msgstr "Open date picker for {keyName}"
 
+#: src/lib/keyboard-shortcuts.ts
+msgid "Open delete confirmation for the selected file-tree items."
+msgstr "Open delete confirmation for the selected file-tree items."
+
 #: src/components/PropertyWidgets.tsx
 msgid "Open documents tagged #{chip}"
 msgstr "Open documents tagged #{chip}"
@@ -5051,6 +5142,10 @@ msgstr "Paragraph"
 #: src/editor/extensions/RawMdxFallbackCMView.tsx
 msgid "Parse failed"
 msgstr "Parse failed"
+
+#: src/lib/keyboard-shortcuts.ts
+msgid "Paste duplicate"
+msgstr "Paste duplicate"
 
 #: src/editor/clipboard/source-clipboard.ts
 msgid "Paste failed.{restoreSuffix}"
@@ -6699,6 +6794,7 @@ msgstr "Templates"
 msgid "Templates available"
 msgstr "Templates available"
 
+#. Group label above the shell-PATH row in Settings → AI tools & CLI
 #. Section label above the shell-PATH toggle in the first-launch dialog
 #: src/components/empty-state/CreatePromptComposer.tsx
 #: src/components/handoff/AgentSplitButton.tsx
@@ -6706,6 +6802,7 @@ msgstr "Templates available"
 #: src/components/handoff/OpenInAgentEmptySpaceSubmenu.tsx
 #: src/components/handoff/OpenInAgentMenu.tsx
 #: src/components/McpConsentDialogBody.tsx
+#: src/components/settings/AiToolsSection.tsx
 #: src/components/settings/SettingsDialogShell.tsx
 #: src/components/settings/TerminalSection.tsx
 #: src/components/TerminalNewChatButton.tsx
@@ -7199,6 +7296,10 @@ msgstr "Type to edit; <0>⌘ Enter</0> saves, <1>Esc</1> cancels."
 msgid "Type to find a doc"
 msgstr "Type to find a doc"
 
+#: src/components/settings/AiToolsSection.tsx
+msgid "unavailable on this platform"
+msgstr "unavailable on this platform"
+
 #: src/components/AutoSyncEnableWarning.tsx
 msgid "Uncommitted changes"
 msgstr "Uncommitted changes"
@@ -7559,6 +7660,10 @@ msgstr "What the agent may read, write, and surface."
 #: src/components/McpConsentDialogBody.tsx
 msgid "What this changes"
 msgstr "What this changes"
+
+#: src/components/settings/AiToolsSection.tsx
+msgid "What this checkbox changes"
+msgstr "What this checkbox changes"
 
 #: src/components/empty-state/empty-state-copy.ts
 msgid "What would you like to create?"

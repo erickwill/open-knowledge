@@ -642,6 +642,44 @@ function selectedTreePathsToDeleteTargets(
     .map((treePath) => treePathToTarget(treePath, documents));
 }
 
+function normalizeTreePathFromModel(model: PierreFileTreeModel, treePath: string): string {
+  const selectedItem =
+    model.getItem(treePath) ?? model.getItem(folderPathToTreeDirectoryPath(treePath));
+  return selectedItem?.isDirectory()
+    ? folderPathToTreeDirectoryPath(treeDirectoryPathToFolderPath(selectedItem.getPath()))
+    : treePath;
+}
+
+function focusedOrFirstSelectedTreePath(model: PierreFileTreeModel): string | null {
+  const selectedPath = model.getFocusedPath() ?? model.getSelectedPaths()[0] ?? null;
+  return selectedPath ? normalizeTreePathFromModel(model, selectedPath) : null;
+}
+
+function resolveDuplicableKeyboardTarget(
+  model: PierreFileTreeModel,
+  documents: readonly FileEntry[],
+  assetTreePaths: ReadonlySet<string>,
+): FileTreeTarget | null {
+  const selectedPath = focusedOrFirstSelectedTreePath(model);
+  if (!selectedPath || assetTreePaths.has(selectedPath)) return null;
+  return treePathToTarget(selectedPath, documents);
+}
+
+function resolveKeyboardDeleteTargets(
+  model: PierreFileTreeModel,
+  documents: readonly FileEntry[],
+): FileTreeTarget[] {
+  const selectedPaths = model.getSelectedPaths();
+  const focusedPath = focusedOrFirstSelectedTreePath(model);
+  const paths =
+    selectedPaths.length > 0
+      ? selectedPaths.map((treePath) => normalizeTreePathFromModel(model, treePath))
+      : focusedPath
+        ? [focusedPath]
+        : [];
+  return selectedTreePathsToDeleteTargets(paths, documents);
+}
+
 function isPathAtOrInsideFolder(path: string, folderPath: string): boolean {
   return path === folderPath || path.startsWith(`${folderPath}/`);
 }
@@ -1467,6 +1505,7 @@ export function FileTree({
     (files: readonly File[], parentDir: string, busyPath: string) => void
   >(() => {});
   const busyPathRef = useRef<string | null>(null);
+  const copiedKeyboardTargetRef = useRef<FileTreeTarget | null>(null);
   // Tracks locally-added tree paths (file/folder creates) with the timestamp
   // when they were optimistically inserted into `documents` state. Used by
   // `refreshDocs` to preserve entries the server's file-watcher index has not
@@ -3292,7 +3331,14 @@ export function FileTree({
       const key = event.key.toLowerCase();
       const isSelectAll = isPlatformShortcut && key === 'a';
       const isDuplicate = isPlatformShortcut && !event.shiftKey && key === 'd';
-      if (!isSelectAll && !isDuplicate) return;
+      const isCopy = isPlatformShortcut && !event.shiftKey && key === 'c';
+      const isPaste = isPlatformShortcut && !event.shiftKey && key === 'v';
+      const isDelete =
+        !event.altKey &&
+        !event.shiftKey &&
+        ((event.metaKey && !event.ctrlKey && key === 'backspace') ||
+          (!event.metaKey && !event.ctrlKey && key === 'delete'));
+      if (!isSelectAll && !isDuplicate && !isCopy && !isPaste && !isDelete) return;
       if (isEditableKeyboardTarget(event.target)) return;
 
       const host = fileTreeHostRef.current;
@@ -3302,18 +3348,46 @@ export function FileTree({
       const focusIsInTree = activeElement instanceof Node && host?.contains(activeElement);
       if (!eventStartedInTree && !focusIsInTree) return;
 
-      if (isDuplicate) {
-        const selectedPath = model.getFocusedPath() ?? model.getSelectedPaths()[0] ?? null;
-        if (!selectedPath) return;
-        const selectedItem =
-          model.getItem(selectedPath) ?? model.getItem(folderPathToTreeDirectoryPath(selectedPath));
-        const normalizedPath = selectedItem?.isDirectory()
-          ? folderPathToTreeDirectoryPath(treeDirectoryPathToFolderPath(selectedItem.getPath()))
-          : selectedPath;
-        if (assetTreePathsRef.current.has(normalizedPath)) return;
-        void handleDuplicateTargetRef.current(
-          treePathToTarget(normalizedPath, documentsRef.current),
+      if (isCopy) {
+        const copiedTarget = resolveDuplicableKeyboardTarget(
+          model,
+          documentsRef.current,
+          assetTreePathsRef.current,
         );
+        if (!copiedTarget) return;
+        copiedKeyboardTargetRef.current = copiedTarget;
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      if (isPaste) {
+        const copiedTarget = copiedKeyboardTargetRef.current;
+        if (!copiedTarget) return;
+        void handleDuplicateTargetRef.current(copiedTarget);
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      if (isDuplicate) {
+        const duplicateTarget = resolveDuplicableKeyboardTarget(
+          model,
+          documentsRef.current,
+          assetTreePathsRef.current,
+        );
+        if (!duplicateTarget) return;
+        void handleDuplicateTargetRef.current(duplicateTarget);
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      if (isDelete) {
+        if (busyPathRef.current !== null) return;
+        const targets = resolveKeyboardDeleteTargets(model, documentsRef.current);
+        if (targets.length === 0) return;
+        setDeleteRequest({ targets });
         event.preventDefault();
         event.stopPropagation();
         return;

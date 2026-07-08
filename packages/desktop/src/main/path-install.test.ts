@@ -17,7 +17,9 @@ import {
   computePathLeg,
   type EnsureCliOnPathResult,
   ensureCliOnPath,
+  isPathShimInstalled,
   pathInstallMarkerPath,
+  removePathShimFromRcFiles,
 } from './path-install.ts';
 
 const EXE = '/Applications/OpenKnowledge.app/Contents/MacOS/OpenKnowledge';
@@ -441,11 +443,12 @@ describe('computePathInstallDescriptor', () => {
     expect(descriptor.shellDetected).toBe(true);
   });
 
-  test('granted consent without a block (user manages PATH themselves) still reads alreadyInstalled', async () => {
+  test('an explicit grant writes the promised block even when ~/.ok/bin is already on the discovered PATH', async () => {
     const h = home();
-    // Grant while `~/.ok/bin` is already on the discovered PATH after an
-    // undecided boot → canSkipRc leaves every rc file untouched, but the
-    // decision is recorded. The row must not re-solicit.
+    // The probe PATH can be stale-true (inherited from a terminal session
+    // that predates an uninstall) and the consent surface named the exact
+    // file it would edit — so an explicit grant always writes. Only the
+    // undecided startup self-heal uses the on-PATH shortcut.
     await ensureCliOnPath(baseOpts(h));
     await ensureCliOnPath(
       baseOpts(h, {
@@ -453,7 +456,7 @@ describe('computePathInstallDescriptor', () => {
         spawn: async () => ({ code: 0, stdout: `${h}/.ok/bin:/usr/bin`, stderr: '' }),
       }),
     );
-    expect(existsSync(join(h, '.zshrc'))).toBe(false);
+    expect(readFileSync(join(h, '.zshrc'), 'utf8')).toContain('# >>> open-knowledge cli >>>');
     const descriptor = computePathInstallDescriptor({ home: h, env: { SHELL: '/bin/zsh' } });
     expect(descriptor.alreadyInstalled).toBe(true);
   });
@@ -496,5 +499,109 @@ describe('computePathLeg', () => {
   test('skipped / healthy-current → none', () => {
     expect(computePathLeg({ status: 'skipped', reason: 'platform' })).toEqual({ status: 'none' });
     expect(computePathLeg({ status: 'healthy-current', marker })).toEqual({ status: 'none' });
+  });
+});
+
+describe('isPathShimInstalled / removePathShimFromRcFiles — the Settings → AI tools PATH toggle', () => {
+  test('grant → installed reads true; remove strips every block, deletes the OK-owned fish conf, and records declined', async () => {
+    const h = home();
+    writeFileSync(join(h, '.zshrc'), 'export FOO=1\n');
+    await ensureCliOnPath(baseOpts(h, { consentDecision: GRANTED }));
+    const env = { SHELL: '/bin/zsh' };
+    expect(isPathShimInstalled({ home: h, env })).toBe(true);
+
+    const result = removePathShimFromRcFiles({ home: h, env });
+    expect(result.status).toBe('removed');
+    // The user's own lines survive; only the managed block is gone.
+    expect(readFileSync(join(h, '.zshrc'), 'utf8')).not.toContain('# >>> open-knowledge cli >>>');
+    expect(readFileSync(join(h, '.zshrc'), 'utf8')).toContain('export FOO=1');
+    // The fish conf file held nothing but the block — removed outright.
+    expect(existsSync(join(h, '.config', 'fish', 'conf.d', 'open-knowledge.fish'))).toBe(false);
+    const marker = readMarkerFile(h);
+    expect(marker.rcFiles).toEqual([]);
+    expect((marker.consent as { status: string }).status).toBe('declined');
+    // NOT recorded as user opt-outs — a Settings re-install must still work.
+    expect(marker.rcOptOuts).toEqual([]);
+    expect(isPathShimInstalled({ home: h, env })).toBe(false);
+  });
+
+  test('startup after a Settings removal never re-appends; a Settings re-install does', async () => {
+    const h = home();
+    writeFileSync(join(h, '.zshrc'), 'export FOO=1\n');
+    await ensureCliOnPath(baseOpts(h, { consentDecision: GRANTED }));
+    removePathShimFromRcFiles({ home: h, env: { SHELL: '/bin/zsh' } });
+
+    // Undecided startup run: recorded decline wins — rc files stay clean.
+    await ensureCliOnPath(baseOpts(h));
+    expect(readFileSync(join(h, '.zshrc'), 'utf8')).not.toContain('# >>> open-knowledge cli >>>');
+
+    // Settings re-install: a fresh grant re-appends (no opt-out poisoning).
+    const regrant = await ensureCliOnPath(baseOpts(h, { consentDecision: GRANTED }));
+    expect(regrant.status).toBe('installed');
+    expect(readFileSync(join(h, '.zshrc'), 'utf8')).toContain('# >>> open-knowledge cli >>>');
+    expect(isPathShimInstalled({ home: h, env: { SHELL: '/bin/zsh' } })).toBe(true);
+  });
+
+  test('re-grant works even when the probe shell inherits a stale PATH containing ~/.ok/bin', async () => {
+    // The app launched from a terminal whose session predates the uninstall
+    // still exports ~/.ok/bin; the login-shell probe inherits it. The
+    // canSkipRc shortcut must not swallow the explicit grant.
+    const h = home();
+    writeFileSync(join(h, '.zshrc'), 'export FOO=1\n');
+    const stalePathSpawn = async () => ({
+      code: 0,
+      stdout: `${join(h, '.ok', 'bin')}:/usr/bin:/bin`,
+      stderr: '',
+    });
+    await ensureCliOnPath(baseOpts(h, { consentDecision: GRANTED, spawn: stalePathSpawn }));
+    removePathShimFromRcFiles({ home: h, env: { SHELL: '/bin/zsh' } });
+
+    const regrant = await ensureCliOnPath(
+      baseOpts(h, { consentDecision: GRANTED, spawn: stalePathSpawn }),
+    );
+    expect(regrant.status).toBe('installed');
+    expect(readFileSync(join(h, '.zshrc'), 'utf8')).toContain('# >>> open-knowledge cli >>>');
+    expect(isPathShimInstalled({ home: h, env: { SHELL: '/bin/zsh' } })).toBe(true);
+  });
+
+  test('a wedged granted-but-blockless marker heals on the next explicit grant', async () => {
+    // State left behind by the pre-fix lockout: consent recorded granted,
+    // rcFiles empty, no block on disk. The healthy-current fast path is
+    // vacuously true for it; an explicit grant must still write the block.
+    const h = home();
+    writeFileSync(join(h, '.zshrc'), 'export FOO=1\n');
+    await ensureCliOnPath(baseOpts(h, { consentDecision: GRANTED }));
+    removePathShimFromRcFiles({ home: h, env: { SHELL: '/bin/zsh' } });
+    const marker = readMarkerFile(h);
+    writeFileSync(
+      pathInstallMarkerPath(h),
+      JSON.stringify({ ...marker, rcFiles: [], consent: GRANTED }, null, 2),
+    );
+
+    const regrant = await ensureCliOnPath(baseOpts(h, { consentDecision: GRANTED }));
+    expect(regrant.status).toBe('installed');
+    expect(readFileSync(join(h, '.zshrc'), 'utf8')).toContain('# >>> open-knowledge cli >>>');
+  });
+
+  test('nothing installed and no marker → not-installed no-op', () => {
+    const h = home();
+    const result = removePathShimFromRcFiles({ home: h, env: { SHELL: '/bin/zsh' } });
+    expect(result.status).toBe('not-installed');
+    expect(existsSync(pathInstallMarkerPath(h))).toBe(false);
+  });
+
+  test('a doubled managed block (dotfile-sync merge) comes out fully clean', async () => {
+    const h = home();
+    await ensureCliOnPath(baseOpts(h, { consentDecision: GRANTED }));
+    const zshrc = join(h, '.zshrc');
+    const withBlock = readFileSync(zshrc, 'utf8');
+    const block = withBlock.slice(
+      withBlock.indexOf('# >>> open-knowledge cli >>>'),
+      withBlock.indexOf('# <<< open-knowledge cli <<<') + '# <<< open-knowledge cli <<<\n'.length,
+    );
+    writeFileSync(zshrc, `${withBlock}\n${block}`);
+    const result = removePathShimFromRcFiles({ home: h, env: { SHELL: '/bin/zsh' } });
+    expect(result.status).toBe('removed');
+    expect(readFileSync(zshrc, 'utf8')).not.toContain('open-knowledge cli');
   });
 });

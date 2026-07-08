@@ -49,6 +49,7 @@ import type {
   OkUpdateStuckHintInfo,
   OkWhatsNewInfo,
 } from '../shared/bridge-contract.ts';
+import type { IntegrationsSetResult, IntegrationsStatus } from '../shared/ipc-channels.ts';
 import { createInvoker } from '../shared/ipc-invoke.ts';
 import { resolveOkDesktopMode } from '../shared/ok-desktop-mode.ts';
 
@@ -498,6 +499,21 @@ const bridge: OkDesktopBridge = {
         skills: request.skills,
       }),
     skip: () => invoke('ok:mcp-wiring:skip'),
+  },
+
+  integrations: {
+    // One discriminated channel (`ok:integrations:dispatch`) backs both
+    // methods, respecting the hand-rolled-channel cap (the
+    // `ok:worktree:dispatch` precedent). Each method knows its branch, so it
+    // casts the union result to its own arm.
+    status: () =>
+      invoke('ok:integrations:dispatch', { kind: 'status' }) as Promise<IntegrationsStatus>,
+    setComponent: (request) =>
+      invoke('ok:integrations:dispatch', {
+        kind: 'set',
+        component: request.component,
+        enabled: request.enabled,
+      }) as Promise<IntegrationsSetResult>,
   },
 
   onboarding: {

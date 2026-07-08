@@ -262,8 +262,21 @@ const CHANNELS_SRC = readFileSync(SRC_PATH, 'utf-8');
  *     keep branch-info's fast path off the network) nor `ok:project:run-checkout`
  *     (a POST that MUTATES the working tree; this is a read-only fetch+classify).
  *     Extends the existing `ok:project:*` namespace, single member.
+ *
+ * Bumped from 77 to 78 for Settings → AI tools (per-component
+ * install/uninstall of OK's global footprint):
+ *
+ *   - `ok:integrations:dispatch` — status read + one-component set folded
+ *     into a single discriminated channel (the `ok:worktree:dispatch`
+ *     precedent), so the surface costs one slot, not two. Could not fold
+ *     into the `ok:mcp-wiring:*` channels: those are the ONE-SHOT
+ *     first-launch consent flow with sender-binding + `handled` idempotence
+ *     (a persistent settings surface riding them would have to defeat both
+ *     guards), and their confirm semantics are batched consent, not
+ *     per-component install/uninstall with live status. New
+ *     `ok:integrations:*` namespace, single member.
  */
-const REQUEST_CHANNEL_CAP = 77;
+const REQUEST_CHANNEL_CAP = 78;
 
 /**
  * Extract the body of an interface block by name. Returns the substring

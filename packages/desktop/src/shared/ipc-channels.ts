@@ -30,13 +30,15 @@
  * existing channels is preferred over net-new hand-rolled channels until
  * that migration lands.
  *
- * Count is 77 (ratchet cap 77). The 74→75 bump reconciled a merge collision:
+ * Count is 78 (ratchet cap 78). The 74→75 bump reconciled a merge collision:
  * the worktree selector (`ok:worktree:dispatch`) and the terminal-controls PR
  * (`ok:terminal:cli-installed-map`) each landed in the base tree's single free
  * slot concurrently. The 75→76 bump then unioned in the desktop
  * startup-instrumentation channel (`ok:startup:renderer-marks`), which landed
  * on main in parallel. The 76→77 bump added the share-receive branch-switch
- * dialog's verdict probe (`ok:project:fetch-target-status`). Full rationale in
+ * dialog's verdict probe (`ok:project:fetch-target-status`). The 77→78 bump
+ * added Settings → AI tools (`ok:integrations:dispatch`, a status+set
+ * discriminated fold per the worktree-dispatch precedent). Full rationale in
  * the ratchet test header.
  */
 
@@ -417,6 +419,78 @@ export interface McpWiringGlobalSkillDescriptor {
  *  fails. The `error` string is user-facing copy. */
 export type McpWiringConfirmResult = { ok: true } | { ok: false; error: string };
 export type McpWiringSkipResult = { ok: true } | { ok: false; error: string };
+
+/** Per-editor MCP state for Settings → AI tools.
+ *  - `installed` — OK's own managed entry is in the editor's user config;
+ *    checkbox renders checked and unchecking removes the entry.
+ *  - `not-installed` — no entry under OK's server name (or no config file);
+ *    checking writes the canonical entry.
+ *  - `foreign` — an entry EXISTS under OK's server name but is not
+ *    recognizably OK's own (customized/forked wrapper). Rendered checked
+ *    with a disclosure; uninstall refuses (guest discipline), install
+ *    overwrites under the namespace-ownership posture.
+ *  - `unmanageable` — a present config OK cannot safely edit (unparseable /
+ *    oversize / duplicate container). Row renders disabled. */
+export type IntegrationsEditorState = 'installed' | 'not-installed' | 'foreign' | 'unmanageable';
+
+export interface IntegrationsEditorStatus {
+  readonly id: McpWiringEditorId;
+  readonly label: string;
+  readonly detected: boolean;
+  readonly state: IntegrationsEditorState;
+  /** Tildified user-config file this row edits; null when the resolver can't
+   *  produce one on this platform. Disclosure only — writes re-resolve. */
+  readonly configPath: string | null;
+  /** Technical locator of OK's entry inside the config, e.g.
+   *  `mcpServers.open-knowledge` or `[mcp_servers.open-knowledge]`. */
+  readonly entryLocator: string;
+}
+
+/** PATH-shim row for Settings → AI tools. `installed` reflects the managed
+ *  rc block actually being on disk (not merely a recorded grant), so the
+ *  checkbox mirrors what external terminals really resolve. */
+export interface IntegrationsPathStatus {
+  readonly shellDetected: boolean;
+  readonly rcFilesToTouch: readonly string[];
+  readonly installed: boolean;
+}
+
+export interface IntegrationsSkillStatus {
+  readonly id: string;
+  readonly name: string;
+  readonly installed: boolean;
+  /** Tildified directories a toggle touches: the central `~/.agents/skills`
+   *  copy plus each per-host copy whose host root exists on this machine. */
+  readonly paths: readonly string[];
+}
+
+/** Full component inventory for Settings → AI tools. `available: false`
+ *  means the desktop's install actors are gated off for this process
+ *  (non-darwin, unpackaged dev build without OK_M6B_FORCE) — status still
+ *  reads, but the section renders read-only. */
+export interface IntegrationsStatus {
+  readonly available: boolean;
+  readonly editors: readonly IntegrationsEditorStatus[];
+  readonly path: IntegrationsPathStatus;
+  readonly skills: readonly IntegrationsSkillStatus[];
+}
+
+/** One toggleable component in Settings → AI tools. */
+export type IntegrationsComponentRef =
+  | { readonly kind: 'editor'; readonly id: McpWiringEditorId }
+  | { readonly kind: 'path' }
+  | { readonly kind: 'skill'; readonly id: string };
+
+export interface IntegrationsSetRequest {
+  readonly component: IntegrationsComponentRef;
+  readonly enabled: boolean;
+}
+
+/** Set-component response. Both arms carry a fresh status snapshot so the
+ *  renderer re-renders truthfully even after a failed or refused toggle. */
+export type IntegrationsSetResult =
+  | { readonly ok: true; readonly status: IntegrationsStatus }
+  | { readonly ok: false; readonly error: string; readonly status: IntegrationsStatus };
 
 /** Options for the open-folder native picker. `defaultPath` seeds the initial
  *  directory shown to the user (e.g., the project root for the consent dialog's
@@ -1066,6 +1140,24 @@ export interface RequestChannels {
    * the renderer discards it.
    */
   'ok:mcp-wiring:renderer-ready': { args: []; result: undefined };
+
+  /**
+   * Settings → AI tools. One consolidated discriminated channel — following
+   * the `ok:worktree:dispatch` precedent rather than adding two net-new
+   * channels — for both operations on OK's global footprint:
+   *   - `{ kind: 'status' }` → full component inventory (per-editor MCP
+   *     entries, the shell-PATH shim, user-global skill bundles). Read-only.
+   *   - `{ kind: 'set', component, enabled }` → install or uninstall ONE
+   *     component. Serialized in main (one in-flight mutation at a time) so
+   *     two windows' toggles can't interleave partial writes on the same
+   *     config file. Returns a fresh status snapshot on both arms.
+   * The renderer's `bridge.integrations.{status,setComponent}` recovers
+   * per-operation typing from the discriminated result.
+   */
+  'ok:integrations:dispatch': {
+    args: [request: { kind: 'status' } | ({ kind: 'set' } & IntegrationsSetRequest)];
+    result: IntegrationsStatus | IntegrationsSetResult;
+  };
 
   /**
    * Per-project consent dialog. Renderer renders a shadcn Dialog inside the

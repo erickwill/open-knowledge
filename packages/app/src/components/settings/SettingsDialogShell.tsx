@@ -19,7 +19,8 @@
  * the body chunk is cached after the first open.
  *
  * Sidebar IA:
- *   USER         → Preferences, Hotkeys, Account
+ *   USER         → Preferences, Hotkeys, Account, AI tools & CLI (Electron
+ *                  host only)
  *   THIS PROJECT → Sync, Search, Templates, Ignore patterns, Config sharing
  *   INTEGRATIONS → Claude Desktop (hidden when desktopPresent === false)
  */
@@ -105,6 +106,10 @@ export function SettingsDialogShell({ open, onOpenChange }: SettingsDialogShellP
         { id: 'preferences', label: t`Preferences` },
         { id: 'hotkeys', label: t`Hotkeys` },
         { id: 'account', label: t`Account` },
+        // Machine-level OK footprint (per-editor MCP entries, Agent Skills,
+        // the ok PATH command) — user-scoped, and desktop-only because the
+        // install actors live in the Electron main process.
+        ...(isOkDesktopHost ? [{ id: 'ai-tools', label: t`AI tools & CLI` }] : []),
       ],
     },
     {

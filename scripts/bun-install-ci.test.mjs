@@ -37,12 +37,20 @@
  *   attempts.
  */
 
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, setDefaultTimeout, test } from 'bun:test';
 import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+// Every test here drives the wrapper via `spawnSync` (bash spawning bash), and
+// spawn/exec latency is variable under machine load — a nominally-instant
+// happy-path attempt has been observed to overrun Bun's 5s default per-test
+// budget on a saturated box even though its real work is milliseconds. The hang
+// tests carry explicit long timeouts already; raise the file default so the
+// fast tests get the same headroom instead of flaking on scheduling latency.
+setDefaultTimeout(30000);
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const WRAPPER = join(SCRIPT_DIR, 'bun-install-ci.sh');

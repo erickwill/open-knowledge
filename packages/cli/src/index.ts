@@ -45,6 +45,10 @@ export {
   writeUserMcpConfigs,
 } from './commands/init.ts';
 export {
+  type McpRemoveOutcome,
+  removeOwnMcpEntry,
+} from './commands/mcp-config-removal.ts';
+export {
   buildMcpConfigDeclineEvent,
   type McpConfigDeclineEvent,
   type McpConfigDeclineScope,

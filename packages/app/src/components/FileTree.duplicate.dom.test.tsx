@@ -194,6 +194,7 @@ class StubModel {
     this.items.set(path, new StubItem(path, path.endsWith('/')));
   }
 
+  scrollToPath() {}
   move() {}
   remove() {}
 }
@@ -219,6 +220,12 @@ let okignoreBindingMock: {
 let projectLocalBindingMock: { patch: ReturnType<typeof mock> } | null = null;
 let mergedConfigMock: {
   appearance?: { sidebar?: { showHiddenFiles?: boolean } };
+} | null = null;
+let deleteConfirmationProps: {
+  itemName?: string;
+  customTitle?: string;
+  customDescription?: string;
+  onDelete?: () => void | Promise<void>;
 } | null = null;
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -373,7 +380,15 @@ mock.module('@/components/ui/skeleton', () => ({
 }));
 
 mock.module('@/components/DeleteConfirmationDialog', () => ({
-  DeleteConfirmationDialog: () => null,
+  DeleteConfirmationDialog: (props: {
+    itemName?: string;
+    customTitle?: string;
+    customDescription?: string;
+    onDelete?: () => void | Promise<void>;
+  }) => {
+    deleteConfirmationProps = props;
+    return <div data-testid="delete-confirmation-dialog" />;
+  },
 }));
 
 mock.module('@/components/NewItemDialog', () => ({
@@ -455,6 +470,7 @@ describe('FileTree duplicate action runtime behavior', () => {
     // These duplicate/rename tests don't depend on visibility config; the
     // tree loads through the default disk-walk listing.
     mergedConfigMock = null;
+    deleteConfirmationProps = null;
     globalThis.fetch = makeFetchMock() as unknown as typeof fetch;
     toastSuccessMock.mockClear();
     toastErrorMock.mockClear();
@@ -775,6 +791,97 @@ describe('FileTree duplicate action runtime behavior', () => {
     });
   });
 
+  test('Cmd/Ctrl+C then Cmd/Ctrl+V duplicates the copied tree item', async () => {
+    renderFileTree();
+    await screen.findByRole('menuitem', { name: /duplicate/i });
+    fetchCalls = [];
+
+    model.focusedPath = null;
+    model.selectedPaths = ['notes/source.mdx'];
+    screen.getByTestId('tree-focus-target').focus();
+    fireEvent.keyDown(document, { key: 'c', ctrlKey: true });
+
+    model.focusedPath = 'images/logo.png';
+    model.selectedPaths = ['images/logo.png'];
+    fireEvent.keyDown(document, { key: 'v', ctrlKey: true });
+
+    await waitFor(() => expect(duplicateCalls()).toHaveLength(1));
+    expect(JSON.parse(String(duplicateCalls()[0]?.init?.body))).toEqual({
+      kind: 'file',
+      path: 'notes/source',
+    });
+  });
+
+  test('Cmd/Ctrl+V without a copied tree item preserves native paste', async () => {
+    renderFileTree();
+    await screen.findByRole('menuitem', { name: /duplicate/i });
+    fetchCalls = [];
+
+    screen.getByTestId('tree-focus-target').focus();
+    const pasteEvent = new KeyboardEvent('keydown', {
+      key: 'v',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    document.dispatchEvent(pasteEvent);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(pasteEvent.defaultPrevented).toBe(false);
+    expect(duplicateCalls()).toHaveLength(0);
+  });
+
+  test('Cmd/Ctrl+C on an asset row does not enqueue a paste target', async () => {
+    renderFileTree();
+    await screen.findByRole('menuitem', { name: /duplicate/i });
+    fetchCalls = [];
+
+    model.focusedPath = 'images/logo.png';
+    model.selectedPaths = ['images/logo.png'];
+    screen.getByTestId('tree-focus-target').focus();
+    const copyEvent = new KeyboardEvent('keydown', {
+      key: 'c',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    document.dispatchEvent(copyEvent);
+    fireEvent.keyDown(document, { key: 'v', ctrlKey: true });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(copyEvent.defaultPrevented).toBe(false);
+    expect(duplicateCalls()).toHaveLength(0);
+  });
+
+  test('Cmd/Ctrl+C on an asset row does not clear the previous copied tree item', async () => {
+    renderFileTree();
+    await screen.findByRole('menuitem', { name: /duplicate/i });
+    fetchCalls = [];
+
+    model.focusedPath = null;
+    model.selectedPaths = ['notes/source.mdx'];
+    screen.getByTestId('tree-focus-target').focus();
+    fireEvent.keyDown(document, { key: 'c', ctrlKey: true });
+
+    model.focusedPath = 'images/logo.png';
+    model.selectedPaths = ['images/logo.png'];
+    const assetCopyEvent = new KeyboardEvent('keydown', {
+      key: 'c',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    document.dispatchEvent(assetCopyEvent);
+    fireEvent.keyDown(document, { key: 'v', ctrlKey: true });
+
+    await waitFor(() => expect(duplicateCalls()).toHaveLength(1));
+    expect(assetCopyEvent.defaultPrevented).toBe(false);
+    expect(JSON.parse(String(duplicateCalls()[0]?.init?.body))).toEqual({
+      kind: 'file',
+      path: 'notes/source',
+    });
+  });
+
   test('Cmd/Ctrl+D ignores asset rows', async () => {
     renderFileTree();
     await screen.findByRole('menuitem', { name: /duplicate/i });
@@ -787,6 +894,78 @@ describe('FileTree duplicate action runtime behavior', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(duplicateCalls()).toHaveLength(0);
+  });
+
+  test('Cmd+Backspace opens delete confirmation for the selected tree item', async () => {
+    renderFileTree();
+    await screen.findByRole('menuitem', { name: /duplicate/i });
+
+    model.focusedPath = null;
+    model.selectedPaths = ['notes/source.mdx'];
+    screen.getByTestId('tree-focus-target').focus();
+    fireEvent.keyDown(document, { key: 'Backspace', metaKey: true });
+
+    await screen.findByTestId('delete-confirmation-dialog');
+    expect(deleteConfirmationProps?.itemName).toBe('source.mdx');
+    expect(deleteConfirmationProps?.customTitle).toBeUndefined();
+  });
+
+  test('Delete opens delete confirmation for the focused tree item', async () => {
+    renderFileTree();
+    await screen.findByRole('menuitem', { name: /duplicate/i });
+
+    model.focusedPath = 'notes/source.mdx';
+    model.selectedPaths = [];
+    screen.getByTestId('tree-focus-target').focus();
+    fireEvent.keyDown(document, { key: 'Delete' });
+
+    await screen.findByTestId('delete-confirmation-dialog');
+    expect(deleteConfirmationProps?.itemName).toBe('source.mdx');
+    expect(deleteConfirmationProps?.customTitle).toBeUndefined();
+  });
+
+  test('Delete does not open confirmation while another file-tree action is busy', async () => {
+    let releaseDuplicate: () => void = () => {};
+    duplicateGate = new Promise<void>((resolve) => {
+      releaseDuplicate = resolve;
+    });
+    const user = userEvent.setup();
+    renderFileTree();
+
+    const duplicate = await screen.findByRole('menuitem', { name: /duplicate/i });
+    fetchCalls = [];
+    await user.click(duplicate);
+    await waitFor(() => expect(duplicateCalls()).toHaveLength(1));
+
+    model.focusedPath = 'notes/source.mdx';
+    model.selectedPaths = [];
+    screen.getByTestId('tree-focus-target').focus();
+    fireEvent.keyDown(document, { key: 'Delete' });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByTestId('delete-confirmation-dialog')).toBeNull();
+    expect(deleteConfirmationProps).toBeNull();
+
+    releaseDuplicate();
+    await waitFor(() =>
+      expect(toastSuccessMock).toHaveBeenCalledWith('File duplicated', {
+        description: 'notes/source copy',
+      }),
+    );
+  });
+
+  test('Delete opens one confirmation for multi-selected targets with nested paths deduped', async () => {
+    renderFileTree();
+    await screen.findByRole('menuitem', { name: /duplicate/i });
+
+    model.focusedPath = null;
+    model.selectedPaths = ['notes/', 'notes/source.mdx', 'images/logo.png'];
+    screen.getByTestId('tree-focus-target').focus();
+    fireEvent.keyDown(document, { key: 'Delete' });
+
+    await screen.findByTestId('delete-confirmation-dialog');
+    expect(deleteConfirmationProps?.customTitle).toBe('Delete selected items');
+    expect(deleteConfirmationProps?.customDescription).toContain('2 selected items');
   });
 
   test('desktop duplicate event bus resolves doc and folder targets through the same duplicate path', async () => {
